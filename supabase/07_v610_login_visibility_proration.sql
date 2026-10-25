@@ -289,6 +289,27 @@ begin
     return uid;
 end $$;
 
+-- Repair accounts created by the older 04_accounts.sql: it left several token columns
+-- NULL, and current Supabase versions then refuse the sign-in ("Database error
+-- querying schema" or "Invalid login"). Safe to run repeatedly.
+do $$
+declare c text;
+begin
+    foreach c in array array['confirmation_token','recovery_token','email_change_token_new','email_change',
+                             'email_change_token_current','phone_change','phone_change_token','reauthentication_token']
+    loop
+        if exists (select 1 from information_schema.columns
+                    where table_schema='auth' and table_name='users' and column_name=c) then
+            execute format('update auth.users set %I = '''' where %I is null', c, c);
+        end if;
+    end loop;
+end $$;
+
+-- If HR, the ED or Finance still cannot sign in, reset them to the starting passwords
+-- (remove the leading dashes, run once, sign in, then change the password):
+--   select public.provision_staff_account('abiola.awokiyesi@slum2school.org','S2S-HR-2026','Abiola','Awokiyesi');
+--   select public.provision_staff_account('otto.orondaam@slum2school.org','S2S-ED-2026','Otto','Orondaam');
+--   select public.provision_staff_account('hammed.balogun@slum2school.org','S2S-Finance-2026','Hammed','Balogun');
 -- Example (one person):
 --   select public.provision_staff_account('name@slum2school.org', 'Temp-Pass-2026', 'First', 'Last');
 create or replace function public.provision_staff_account(

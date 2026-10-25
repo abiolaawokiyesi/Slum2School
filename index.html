@@ -4520,7 +4520,7 @@ let srQuery='', stTarget='';
 
 window.renderStaffRegister=function(){
   const body=document.getElementById('staff-reg-body'); if(!body)return;
-  if(!canViewPayroll(CU)){ const c=document.getElementById('staff-register-card'); if(c)c.style.display='none'; return; }
+  { const c=document.getElementById('staff-register-card'); if(!canViewPayroll(CU)){ if(c)c.style.display='none'; return; } if(c)c.style.display=''; }
   const sals=getSalaries();
   const filt=(document.getElementById('sr-status-filter')||{}).value||'';
   const q=srQuery.toLowerCase();
