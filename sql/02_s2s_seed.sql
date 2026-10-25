@@ -1,0 +1,191 @@
+-- 02 · SEED DATA (mirrors the June 2026 Summarized Salary Report; total ₦8,315,000)
+BEGIN;
+
+INSERT INTO departments(name,lead_email) VALUES
+ ('Management',NULL),('HR & Talent',NULL),('Finance',NULL),('Programs',NULL),('Education',NULL),('Operations',NULL),('Partnerships & Fundraising',NULL),('Media',NULL)
+ON CONFLICT (name) DO NOTHING;
+
+INSERT INTO app_users(email,first_name,last_name,user_type,role,department,staff_id,is_active) VALUES
+ ('otto.harmony@slum2school.org','Otto','Harmony','employee','Executive Director','Full-Time','S26001',TRUE),
+ ('ifeanyichukwu.lois@slum2school.org','Ifeanyichukwu','Lois','employee','Senior Growth and Sustainability Manager','Full-Time','S26002',TRUE),
+ ('abiola.awokiyesi@slum2school.org','Abiola','Awokiyesi','superadmin','Human Resource Manager','Full-Time','S26003',TRUE),
+ ('yahaya.iloba@slum2school.org','Yahaya','Iloba','employee','Partnership Manager','Full-Time','S26004',TRUE),
+ ('patience.osinaike@slum2school.org','Patience','Osinaike','employee','Chief of Staff','Full-Time','S26005',TRUE),
+ ('adekunle.olukayode@slum2school.org','Adekunle','Olukayode','employee','Senior Project Manager','Full-Time','S26006',TRUE),
+ ('ekene.chukwuma@slum2school.org','Ekene','Chukwuma','employee','Administration & Logistics Manager','Full-Time','S26007',TRUE),
+ ('balogun.olanrewaju@slum2school.org','Balogun','Olanrewaju','employee','Finance Manager','Full-Time','S26008',TRUE),
+ ('oluyemi.alugo@slum2school.org','Oluyemi','Alugo','employee','Education & Innovation Manager','Full-Time','S26009',TRUE),
+ ('reuben.micheal@slum2school.org','Reuben','Micheal','employee','Project Coordinator','Full-Time','S26010',TRUE),
+ ('akodoye.sewanu@slum2school.org','Akodoye','Sewanu','employee','Programs Coordinator','Full-Time','S26011',TRUE),
+ ('mojetoluwa.adedeji@slum2school.org','Mojetoluwa','Adedeji','employee','Partnership & Fundraising Officer','Full-Time','S26012',TRUE),
+ ('favour.oluwatunbi@slum2school.org','Favour','Oluwatunbi','employee','Creative Media and Content Coordinator','Full-Time','S26013',TRUE)
+ON CONFLICT (email) DO NOTHING;
+
+INSERT INTO staff(staff_id,full_name,role,category,department,status,start_date) VALUES
+ ('S26001','Otto Orondaam Harmony','Executive Director','Full-Time','Full-Time','Active','Jun 2026'),
+ ('S26002','Ifeanyichukwu Lois','Senior Growth and Sustainability Manager','Full-Time','Full-Time','Active','Jun 2026'),
+ ('S26003','Abiola Awokiyesi','Human Resource Manager','Full-Time','Full-Time','Active','Jun 2026'),
+ ('S26004','Yahaya Hauwa Iloba','Partnership Manager','Full-Time','Full-Time','Active','Jun 2026'),
+ ('S26005','Patience Osinaike','Chief of Staff','Full-Time','Full-Time','Active','Jun 2026'),
+ ('S26006','Adekunle Idowu Olukayode','Senior Project Manager','Full-Time','Full-Time','Active','Jun 2026'),
+ ('S26007','Ekene Chukwuma','Administration & Logistics Manager','Full-Time','Full-Time','Active','Jun 2026'),
+ ('S26008','Balogun Hammed Olanrewaju','Finance Manager','Full-Time','Full-Time','Active','Jun 2026'),
+ ('S26009','Oluyemi Ajike Alugo','Education & Innovation Manager','Full-Time','Full-Time','Active','Jun 2026'),
+ ('S26010','Reuben Micheal','Project Coordinator','Full-Time','Full-Time','Active','Jun 2026'),
+ ('S26011','Akodoye Henry Sewanu','Programs Coordinator','Full-Time','Full-Time','Active','Jun 2026'),
+ ('S26012','Mojetoluwa Adedeji','Partnership & Fundraising Officer','Full-Time','Full-Time','Active','Jun 2026'),
+ ('S26013','Favour Oluwatunbi','Creative Media and Content Coordinator','Full-Time','Full-Time','Active','Jun 2026'),
+ ('S26014','Joshua Samson','Program Manager (Abj)','Contract','Contract','Active','Jun 2026'),
+ ('S26015','Emmanuella Iduot','Program Manager (PH)','Contract','Contract','Active','Jun 2026'),
+ ('S26016','Praise Ntui','Creative Media Executive','Contract','Contract','Active','Jun 2026'),
+ ('S26017','Grace Udeh','Cleaning Officer','Auxiliary','Auxiliary','Active','Jun 2026'),
+ ('S26018','Christopher Epigha','Community Officer','Auxiliary','Auxiliary','Active','Jun 2026'),
+ ('S26019','Moshood Adewale Ayeola','Security Personnel (Saga)','Auxiliary','Auxiliary','Active','Jun 2026'),
+ ('S26020','Moibi Taofeek','Security Personnel (Saga)','Auxiliary','Auxiliary','Active','Jun 2026'),
+ ('S26021','Glory Semidara','Cleaning Officer - Saga','Auxiliary','Auxiliary','Active','Jun 2026'),
+ ('S26022','Ebimobowei Jimma Ugeh','Cleaning Officer - Saga','Auxiliary','Auxiliary','Active','Jun 2026'),
+ ('S26023','Amala Security','Security Personnel (Hub)','Auxiliary','Auxiliary','Active','Jun 2026'),
+ ('S26024','NFSS Security','Security Personnel','Auxiliary','Auxiliary','Active','Jun 2026'),
+ ('S26025','Wada James Jesutin','Adekunle Teacher','School','School','Active','Jun 2026'),
+ ('S26026','Idowu Joshua','Adekunle Teacher','School','School','Active','Jun 2026'),
+ ('S26027','Chinaza Joy Agudozie','Adekunle Teacher','School','School','Active','Jun 2026'),
+ ('S26028','Israel Afolarin Idowu','Adekunle Teacher','School','School','Active','Jun 2026'),
+ ('S26029','Anifat Jimoh','Aiyetoro Teacher','School','School','Active','Jun 2026'),
+ ('S26030','Jonathan Deborah','Aiyetoro Teacher','School','School','Active','Jun 2026'),
+ ('S26031','Odjenu Ruth Adeola','Aiyetoro Teacher','School','School','Active','Jun 2026'),
+ ('S26032','Zaccheaus Oluwaseun Tosse','Aiyetoro Teacher','School','School','Active','Jun 2026'),
+ ('S26033','Iroko Temitope Barthlemy','Makoko Community Engagement Officer','School','School','Active','Jun 2026'),
+ ('S26034','Agoyon Amandine Abiodun','Makoko Teacher','School','School','Active','Jun 2026'),
+ ('S26035','Okpoe Florentin Mihode','Makoko Teacher','School','School','Active','Jun 2026'),
+ ('S26036','Ige Mary Olubimpe','Makoko Children/School Support','School','School','Active','Jun 2026'),
+ ('S26037','Zeblon Doris Flora','Epiphany Teacher & Independent Community Officer','School','School','Active','Jun 2026'),
+ ('S26038','Happiness Anadozie','Epiphany Teacher','School','School','Active','Jun 2026'),
+ ('S26039','Omosuwa Emiloju','School Officer / Support','School','School','Active','Jun 2026'),
+ ('S26040','Modinat Idowu Kamilu','Green Academy','School','School','Active','Jun 2026'),
+ ('S26041','Giwa Opeyemi','Green Academy','School','School','Active','Jun 2026'),
+ ('S26042','Gbatomine Queen','Green Academy','School','School','Active','Jun 2026'),
+ ('S26043','Aisha Firdausi Zakari','Field Officer','School','School','Active','Jun 2026'),
+ ('S26044','Michelle Omon Ijeojealero','Green Academy','School','School','Active','Jun 2026'),
+ ('S26045','Dereoyanimugh Paibi','Green Academy','School','School','Active','Jun 2026'),
+ ('S26046','Toluwalase Stola','Green Academy','School','School','Active','Jun 2026'),
+ ('S26047','Aminat Idris','Green Academy','School','School','Active','Jun 2026'),
+ ('S26048','Okwandu Atuoma','Green Academy','School','School','Active','Jun 2026'),
+ ('S26049','Sunday Posu','Badagry Community Officer','School','School','Active','Jun 2026'),
+ ('S26050','Ashiegbu Salem Chinemerem','Green Academy','School','School','Active','Jun 2026'),
+ ('S26051','Oluwafisayo Olaoye Peace','Green Academy','School','School','Active','Jun 2026')
+ON CONFLICT (staff_id) DO NOTHING;
+
+UPDATE staff s SET email=u.email FROM app_users u WHERE u.staff_id=s.staff_id;
+
+INSERT INTO salaries(staff_id,gross,other_fixed) VALUES
+ ('S26001',600000,0),
+ ('S26002',550000,0),
+ ('S26003',300000,0),
+ ('S26004',350000,0),
+ ('S26005',300000,0),
+ ('S26006',350000,0),
+ ('S26007',250000,0),
+ ('S26008',300000,0),
+ ('S26009',250000,0),
+ ('S26010',220000,0),
+ ('S26011',220000,0),
+ ('S26012',200000,0),
+ ('S26013',200000,0),
+ ('S26014',250000,0),
+ ('S26015',300000,0),
+ ('S26016',100000,0),
+ ('S26017',100000,0),
+ ('S26018',75000,0),
+ ('S26019',40000,0),
+ ('S26020',40000,0),
+ ('S26021',70000,0),
+ ('S26022',70000,0),
+ ('S26023',235000,0),
+ ('S26024',80000,0),
+ ('S26025',100000,0),
+ ('S26026',100000,0),
+ ('S26027',100000,0),
+ ('S26028',100000,0),
+ ('S26029',100000,0),
+ ('S26030',100000,0),
+ ('S26031',100000,0),
+ ('S26032',100000,0),
+ ('S26033',150000,0),
+ ('S26034',100000,0),
+ ('S26035',100000,0),
+ ('S26036',70000,0),
+ ('S26037',150000,0),
+ ('S26038',100000,0),
+ ('S26039',200000,0),
+ ('S26040',75000,0),
+ ('S26041',75000,0),
+ ('S26042',75000,0),
+ ('S26043',150000,0),
+ ('S26044',120000,0),
+ ('S26045',100000,0),
+ ('S26046',100000,0),
+ ('S26047',100000,0),
+ ('S26048',100000,0),
+ ('S26049',100000,0),
+ ('S26050',100000,0),
+ ('S26051',100000,0)
+ON CONFLICT (staff_id) DO UPDATE SET gross=EXCLUDED.gross;
+
+INSERT INTO pay_rates(id,paye,pension,nhf,other) VALUES (1,0,0,0,0) ON CONFLICT (id) DO NOTHING;
+
+-- Sample attendance (recent weekdays) so dashboards return live figures
+
+INSERT INTO attendance(staff_id,name,department,work_date,clock_in,clock_out,lat,lng,verified_id) VALUES
+ ('S26001','Otto Orondaam Harmony','Full-Time','2026-07-22','2026-07-22 08:41:00+01','2026-07-22 16:04:00+01',6.4413,3.4712,TRUE),
+ ('S26001','Otto Orondaam Harmony','Full-Time','2026-07-21','2026-07-21 08:37:00+01','2026-07-21 16:32:00+01',6.4413,3.4712,TRUE),
+ ('S26001','Otto Orondaam Harmony','Full-Time','2026-07-20','2026-07-20 08:26:00+01','2026-07-20 16:15:00+01',6.4413,3.4712,TRUE),
+ ('S26001','Otto Orondaam Harmony','Full-Time','2026-07-16','2026-07-16 09:07:00+01','2026-07-16 16:40:00+01',6.4413,3.4712,TRUE),
+ ('S26002','Ifeanyichukwu Lois','Full-Time','2026-07-22','2026-07-22 09:36:00+01','2026-07-22 18:25:00+01',6.4413,3.4712,TRUE),
+ ('S26002','Ifeanyichukwu Lois','Full-Time','2026-07-20','2026-07-20 08:08:00+01','2026-07-20 17:26:00+01',6.4413,3.4712,TRUE),
+ ('S26002','Ifeanyichukwu Lois','Full-Time','2026-07-17','2026-07-17 08:19:00+01','2026-07-17 18:52:00+01',6.4413,3.4712,TRUE),
+ ('S26002','Ifeanyichukwu Lois','Full-Time','2026-07-16','2026-07-16 08:36:00+01','2026-07-16 18:12:00+01',6.4413,3.4712,TRUE),
+ ('S26003','Abiola Awokiyesi','Full-Time','2026-07-22','2026-07-22 08:04:00+01','2026-07-22 18:03:00+01',6.4413,3.4712,TRUE),
+ ('S26003','Abiola Awokiyesi','Full-Time','2026-07-21','2026-07-21 08:34:00+01','2026-07-21 17:49:00+01',6.4413,3.4712,TRUE),
+ ('S26003','Abiola Awokiyesi','Full-Time','2026-07-20','2026-07-20 08:29:00+01','2026-07-20 17:19:00+01',6.4413,3.4712,TRUE),
+ ('S26003','Abiola Awokiyesi','Full-Time','2026-07-17','2026-07-17 08:49:00+01','2026-07-17 16:05:00+01',6.4413,3.4712,TRUE),
+ ('S26003','Abiola Awokiyesi','Full-Time','2026-07-16','2026-07-16 08:21:00+01','2026-07-16 18:28:00+01',6.4413,3.4712,TRUE),
+ ('S26004','Yahaya Hauwa Iloba','Full-Time','2026-07-22','2026-07-22 09:07:00+01','2026-07-22 18:26:00+01',6.4413,3.4712,TRUE),
+ ('S26004','Yahaya Hauwa Iloba','Full-Time','2026-07-21','2026-07-21 08:31:00+01','2026-07-21 17:02:00+01',6.4413,3.4712,TRUE),
+ ('S26004','Yahaya Hauwa Iloba','Full-Time','2026-07-20','2026-07-20 08:35:00+01','2026-07-20 18:50:00+01',6.4413,3.4712,TRUE),
+ ('S26004','Yahaya Hauwa Iloba','Full-Time','2026-07-17','2026-07-17 08:44:00+01','2026-07-17 17:38:00+01',6.4413,3.4712,TRUE),
+ ('S26004','Yahaya Hauwa Iloba','Full-Time','2026-07-16','2026-07-16 09:04:00+01','2026-07-16 16:17:00+01',6.4413,3.4712,TRUE),
+ ('S26005','Patience Osinaike','Full-Time','2026-07-22','2026-07-22 08:03:00+01','2026-07-22 18:44:00+01',6.4413,3.4712,TRUE),
+ ('S26005','Patience Osinaike','Full-Time','2026-07-21','2026-07-21 08:43:00+01','2026-07-21 17:18:00+01',6.4413,3.4712,TRUE),
+ ('S26005','Patience Osinaike','Full-Time','2026-07-20','2026-07-20 09:22:00+01','2026-07-20 16:29:00+01',6.4413,3.4712,TRUE),
+ ('S26005','Patience Osinaike','Full-Time','2026-07-17','2026-07-17 08:31:00+01','2026-07-17 16:13:00+01',6.4413,3.4712,TRUE),
+ ('S26005','Patience Osinaike','Full-Time','2026-07-16','2026-07-16 08:15:00+01','2026-07-16 17:25:00+01',6.4413,3.4712,TRUE),
+ ('S26006','Adekunle Idowu Olukayode','Full-Time','2026-07-22','2026-07-22 08:10:00+01','2026-07-22 17:25:00+01',6.4413,3.4712,TRUE),
+ ('S26006','Adekunle Idowu Olukayode','Full-Time','2026-07-21','2026-07-21 09:52:00+01','2026-07-21 17:55:00+01',6.4413,3.4712,TRUE),
+ ('S26006','Adekunle Idowu Olukayode','Full-Time','2026-07-20','2026-07-20 09:22:00+01','2026-07-20 18:24:00+01',6.4413,3.4712,TRUE),
+ ('S26006','Adekunle Idowu Olukayode','Full-Time','2026-07-17','2026-07-17 08:11:00+01','2026-07-17 16:14:00+01',6.4413,3.4712,TRUE),
+ ('S26006','Adekunle Idowu Olukayode','Full-Time','2026-07-16','2026-07-16 08:53:00+01','2026-07-16 18:11:00+01',6.4413,3.4712,TRUE),
+ ('S26007','Ekene Chukwuma','Full-Time','2026-07-22','2026-07-22 08:26:00+01','2026-07-22 18:23:00+01',6.4413,3.4712,TRUE),
+ ('S26007','Ekene Chukwuma','Full-Time','2026-07-21','2026-07-21 08:08:00+01','2026-07-21 18:54:00+01',6.4413,3.4712,TRUE),
+ ('S26007','Ekene Chukwuma','Full-Time','2026-07-20','2026-07-20 08:43:00+01','2026-07-20 18:03:00+01',6.4413,3.4712,TRUE),
+ ('S26007','Ekene Chukwuma','Full-Time','2026-07-17','2026-07-17 09:55:00+01','2026-07-17 18:51:00+01',6.4413,3.4712,TRUE),
+ ('S26007','Ekene Chukwuma','Full-Time','2026-07-16','2026-07-16 08:25:00+01','2026-07-16 16:30:00+01',6.4413,3.4712,TRUE),
+ ('S26008','Balogun Hammed Olanrewaju','Full-Time','2026-07-22','2026-07-22 08:04:00+01','2026-07-22 16:28:00+01',6.4413,3.4712,TRUE),
+ ('S26008','Balogun Hammed Olanrewaju','Full-Time','2026-07-21','2026-07-21 08:03:00+01','2026-07-21 16:00:00+01',6.4413,3.4712,TRUE),
+ ('S26008','Balogun Hammed Olanrewaju','Full-Time','2026-07-20','2026-07-20 08:23:00+01','2026-07-20 18:01:00+01',6.4413,3.4712,TRUE),
+ ('S26008','Balogun Hammed Olanrewaju','Full-Time','2026-07-16','2026-07-16 08:40:00+01','2026-07-16 17:22:00+01',6.4413,3.4712,TRUE)
+ON CONFLICT (staff_id,work_date) DO NOTHING;
+
+-- Sample requisition raised by HR (matches uploaded memo template)
+INSERT INTO requisitions(id,subject,addressed_to,through,background,purpose,method,method_detail,amount,amount_words,requester_email,requester_name,designation,status) VALUES
+ ('REQ1000000000001','Payment for CCTV repairs','Hammed Balogun','The Executive Director',
+  'This memo is written to request approval for the payment of the CCTV repairs.','CCTV Repairs','Fund Transfer',
+  'Opay — Nwachuku Kingsley 8053731857',190000,'One hundred and ninety thousand naira only',
+  'abiola.awokiyesi@slum2school.org','Abiola Awokiyesi','Human Resource Manager','Pending')
+ON CONFLICT (id) DO NOTHING;
+INSERT INTO requisition_items(requisition_id,sn,description,amount,account_details) VALUES
+ ('REQ1000000000001',1,'CCTV Power box',30000,'Nwachuku Kingsley · 8053731857 · Opay'),
+ ('REQ1000000000001',2,'RG59 Cable Power and video',70000,'Nwachuku Kingsley · 8053731857 · Opay'),
+ ('REQ1000000000001',3,'Service Charge',60000,'Nwachuku Kingsley · 8053731857 · Opay'),
+ ('REQ1000000000001',4,'Arrears',30000,'Nwachuku Kingsley · 8053731857 · Opay');
+
+COMMIT;

@@ -1,5 +1,19 @@
 # S2S Portal — Deploying & "nothing changed" fix
 
+## v6.10.0 quick checks (sign-in, HR / ED visibility, proration)
+The live badge now reads **S2S Portal v6.10.0 · 25 Oct 2026**. If it does not, clear the cache as below.
+
+- **"Invalid login" on a second device.** Run `supabase/07_v610_login_visibility_proration.sql`, and turn
+  Authentication > Providers > Email > "Confirm email" OFF. The person signs in once with the password they
+  used on their first device. If they only ever used one device and the cloud was down when they registered,
+  they sign in there first (it moves the account to the cloud), then use any other device.
+- **"Email not confirmed".** Use the "resend confirmation" link shown under the message, or run `07` again (it confirms every company address).
+- **HR or ED cannot see the attendance tabs.** Their login email must be listed in `access_roles`
+  (`select * from public.access_roles;`). Add any other address they sign in with in Admin Panel > Access roles.
+- **A clock-in is missing from "Today - All Staff".** Open the board and press **Cloud check**. If it lists the person under
+  "clocked in, not matched", put their real login email on their record in Payroll > Staff register.
+- **Part-month pay looks wrong.** Check the start date, last working day and the basis in Deduction rates. The % button next to the name sets exact days for one month.
+
 ## First: confirm which version is live
 Open your deployed site. The updated build shows a small badge at the **bottom-left**:
 
