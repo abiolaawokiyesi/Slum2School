@@ -1,4 +1,4 @@
-# Bringing the S2S People Portal live — quick guide (v6.11.0)
+# Bringing the S2S People Portal live — quick guide (v6.12.0)
 
 **From v6.9.2 nobody has to enter anything.** Your Supabase project details are built into
 `index.html`, so the portal connects itself the first time each person opens it. Staff just open the
@@ -32,6 +32,7 @@ Open your project at <https://supabase.com>, go to **SQL Editor → New query**,
 | 6 | `06_verify.sql` | Optional — checks everything landed, and gives HR and the ED 20 ready-made activity queries |
 | 7 | `07_v610_login_visibility_proration.sql` | **v6.10.** Sign-in from any device, who counts as HR / ED / Finance (`access_roles`), the profile guard, automatic email confirmation for company addresses, and the salary proration columns. Run it last, and again whenever you re-run `01` |
 | 8 | `08_v611_compliance.sql` | **v6.11.** Cloud columns for the salary breakdown, date of birth and the working-day / statutory settings |
+| 9 | `09_v612_departments_insurance.sql` | **v6.12.** Departments, outsourced staff and who is on the NSITF and Group Life schedules, saved in the cloud |
 
 Every file is safe to run more than once, so if you lose your place you can start that file again.
 Green "Success" with no rows returned is the normal result for files 1 to 5.

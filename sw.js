@@ -5,7 +5,7 @@
    client, Leaflet) are pre-cached on install, so requisitions, memos, printing
    and clock-in all work with no internet at all.
    ═════════════════════════════════════════════════════════════════════════ */
-const CACHE = 's2s-portal-v6_11_0';   // bump on every deploy to force fresh content
+const CACHE = 's2s-portal-v6_12_0';   // bump on every deploy to force fresh content
 
 /* Same-origin app shell — must be cached for the app to open offline */
 const SHELL = ['./', './index.html', './icon-192.png', './icon-512.png'];

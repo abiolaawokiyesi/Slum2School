@@ -1032,6 +1032,7 @@ const S2S_BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAY
             <select class="fsel pay-admin" id="pay-year" style="height:32px;font-size:11.5px;max-width:92px"></select>
             <select class="fsel pay-admin" id="pay-basis" title="How part-month pay is calculated" style="height:32px;font-size:11.5px;max-width:195px"><option value="calendar">Pro-rate: calendar days</option><option value="working">Pro-rate: working days</option><option value="fixed30">Pro-rate: 30-day month</option></select>
             <button class="btn v sm pay-admin" onclick="printPayrollDoc()"><i class="ti ti-printer"></i>Print payroll</button>
+            <button class="btn v sm pay-admin" onclick="s2sPrintByDept()"><i class="ti ti-building"></i>By department</button>
             <button class="btn p pay-admin" onclick="runPayroll()"><i class="ti ti-player-play"></i>Run payroll</button>
           </div></div>
 
@@ -4002,8 +4003,7 @@ function s2sHideNav(){
       <div class="fl"><label>Role / job title</label><input id="st-r" placeholder="e.g. Program Coordinator"></div>
     </div>
     <div class="fl-row">
-      <div class="fl"><label>Department</label><input id="st-d" placeholder="e.g. Programs" list="st-dept-list">
-        <datalist id="st-dept-list"></datalist></div>
+      <div class="fl"><label>Department</label><select id="st-d"><option value="">Unassigned</option><option>Admin, Procurement and Logistics</option><option>External Relations and Partnerships</option><option>Finance</option><option>Growth and Sustainability</option><option>Human Resource</option><option>Media and Communication</option><option>Program Management</option></select></div>
       <div class="fl"><label>Payroll category</label><select id="st-cat"><option>Full-Time</option><option>Contract</option><option>Auxiliary</option><option>School</option></select></div>
     </div>
     <div class="fl-row">
@@ -4019,7 +4019,14 @@ function s2sHideNav(){
       <div class="fl"><label>Gross monthly salary (₦)</label><input id="st-gross" type="number" placeholder="150000"></div>
       <div class="fl"><label>Other fixed deductions (₦)</label><input id="st-other" type="number" placeholder="0"></div>
     </div>
-    <div style="font-size:11px;font-weight:700;color:var(--nv);margin:8px 0 3px">Salary breakdown (optional - gross becomes the total)</div>
+    <div class="fl"><label>Also works in (second department, optional)</label><select id="st-d2"><option value="">Unassigned</option><option>Admin, Procurement and Logistics</option><option>External Relations and Partnerships</option><option>Finance</option><option>Growth and Sustainability</option><option>Human Resource</option><option>Media and Communication</option><option>Program Management</option></select></div>
+    <div style="font-size:11px;font-weight:700;color:var(--nv);margin:8px 0 3px">Employer &amp; insurance</div>
+    <div class="fl-row">
+      <div class="fl"><label>Employed by</label><select id="st-emp"><option value="direct">Slum2School Africa</option><option value="outsourced">Another company (outsourced)</option></select></div>
+      <div class="fl"><label>Company name</label><input id="st-vendor" placeholder="e.g. Amala Security"></div>
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;margin-bottom:4px"><label style="display:flex;gap:5px;align-items:center"><input type="checkbox" id="st-insn"> Include in NSITF schedule</label><label style="display:flex;gap:5px;align-items:center"><input type="checkbox" id="st-insg"> Include in Group Life schedule</label></div>
+    <div class="fl-hint" style="font-size:10.5px;color:var(--gr);margin-bottom:6px">Staff employed by another company are insured by that company, so they are left off by default.</div>    <div style="font-size:11px;font-weight:700;color:var(--nv);margin:8px 0 3px">Salary breakdown (optional - gross becomes the total)</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
       <div class="fl"><label>Basic (N)</label><input id="st-basic" type="number" placeholder="0"></div>
       <div class="fl"><label>Housing (N)</label><input id="st-housing" type="number" placeholder="0"></div>
@@ -7333,28 +7340,330 @@ window.sbHydrate=sbHydrate=async function(){
   try{ refreshPayrollViews(); }catch(e){}
 };
 
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   v6.12 · departments, outsourced staff and who is on the insurance schedules
+   ═══════════════════════════════════════════════════════════════════════════ */
+const DEPTS=['External Relations and Partnerships','Finance','Admin, Procurement and Logistics','Program Management','Media and Communication','Human Resource','Growth and Sustainability'];
+const DEPT_SEED=[
+  ['External Relations and Partnerships',['hauwa']],
+  ['Finance',['hammed']],
+  ['Admin, Procurement and Logistics',['ekene']],
+  ['Program Management',['adekunle','patience','henry','michael|micheal','oluyemi']],
+  ['Media and Communication',['praise','favour','elisha']],
+  ['Human Resource',['abiola']],
+  ['Growth and Sustainability',['lois','hauwa']]
+];
+function isDept(d){ return DEPTS.indexOf(d)>=0; }
+function dPrimary(s){ return isDept(s.d)?s.d:'Unassigned'; }
+function dAlso(s){ return String(s.d2||'').split(/;\s*/).map(x=>x.trim()).filter(isDept); }
+function dAll(s){ const a=isDept(s.d)?[s.d]:[]; dAlso(s).forEach(x=>{ if(a.indexOf(x)<0) a.push(x); }); return a; }
+const isOut=s=>s&&s.emp==='outsourced';
+function covered(s,kind){
+  if(!s) return true;
+  const k=kind==='nsitf'?'insNsitf':'insGli';
+  if(s[k]===true||s[k]===false) return s[k];
+  return !isOut(s);
+}
+
+/* backup copy of the extra staff fields, so they survive a cloud refresh even before the SQL is run */
+function metaMap(){ return DB.kv.get('s2s_staffmeta')||{}; }
+function saveMeta(s){
+  const m=metaMap(); m[s.id]={d2:s.d2||'',emp:s.emp||'',vendor:s.vendor||'',insNsitf:s.insNsitf,insGli:s.insGli,dob:s.dob||''};
+  DB.kv.set('s2s_staffmeta',m);
+}
+async function pushStaffMeta(s){
+  if(!(SB_READY&&SB&&S.cloudUser)) return;
+  try{ await SB.from('staff').update({department:isDept(s.d)?s.d:(s.d||null)}).eq('staff_id',s.id); }catch(e){}
+  try{
+    await SB.from('staff').update({dept2:s.d2||null,employment_type:isOut(s)?'outsourced':'direct',employer_company:s.vendor||null,in_nsitf:covered(s,'nsitf'),in_gli:covered(s,'gli')}).eq('staff_id',s.id);
+  }catch(e){}
+}
+function mergeMeta(rows){
+  const bk=metaMap();
+  STAFF.forEach(s=>{
+    const c=(rows&&rows.find(x=>x.staff_id===s.id))||{}, b=bk[s.id]||{};
+    if(c.dob) s.dob=c.dob; else if(b.dob&&!s.dob) s.dob=b.dob;
+    s.d2=(c.dept2!=null&&c.dept2!=='')?c.dept2:(b.d2||s.d2||'');
+    const emp=c.employment_type||b.emp||s.emp; if(emp==='outsourced') s.emp='outsourced'; else if(emp==='direct') s.emp='direct';
+    s.vendor=c.employer_company||b.vendor||s.vendor||'';
+    [['in_nsitf','insNsitf'],['in_gli','insGli']].forEach(p=>{ const cv=c[p[0]]; if(typeof cv==='boolean') s[p[1]]=cv; else if(typeof b[p[1]]==='boolean') s[p[1]]=b[p[1]]; });
+  });
+}
+/* one-off sorting of the existing roster into the official departments, and the outsourced companies */
+function seedMeta(){
+  const changed=[];
+  STAFF.forEach(s=>{
+    let ch=false;
+    if(!isDept(s.d)){
+      const words=String(s.n||'').toLowerCase().split(/[^a-z]+/).filter(Boolean), hit=[];
+      DEPT_SEED.forEach(p=>{ if(p[1].some(t=>t.split('|').some(a=>words.indexOf(a)>=0))) hit.push(p[0]); });
+      if(hit.length){ s.d=hit[0]; s.d2=hit.slice(1).join('; '); ch=true; }
+    }
+    if(!s.emp && /^(amala|nfss|crystal)/i.test(String(s.n||'').trim())){ s.emp='outsourced'; s.vendor=s.vendor||s.n; ch=true; }
+    if(ch) changed.push(s);
+  });
+  return changed;
+}
+function runSeed(){
+  try{
+    if(!(CU&&canViewPayroll(CU))) return;
+    mergeMeta(null);
+    const ch=seedMeta();
+    STAFF.forEach(saveMeta); saveStaff();
+    ch.forEach(pushStaffMeta);
+  }catch(e){}
+}
+
+/* ── staff register: department filter, outsourced badge, department chips ── */
+let srQ='', srDept='';
+window.filterStaffReg=function(v){ srQ=v||''; renderStaffRegister(); };
+window.s2sDeptFilter=function(d){ srDept=(srDept===d)?'':d; renderStaffRegister(); };
+window.renderStaffRegister=renderStaffRegister=function(){
+  const body=$('staff-reg-body'); if(!body) return;
+  const card=$('staff-register-card');
+  if(!canViewPayroll(CU)){ if(card) card.style.display='none'; return; }
+  if(card) card.style.display='';
+  const sals=getSalaries(), filt=(($('sr-status-filter')||{}).value)||'', q=srQ.toLowerCase();
+  // chips
+  let box=$('sr-summary');
+  if(!box&&card){ box=document.createElement('div'); box.id='sr-summary'; box.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 12px'; const a=card.querySelector('.frow'); if(a) a.parentNode.insertBefore(box,a); else card.appendChild(box); }
+  if(box){
+    const on=STAFF.filter(isOnPayroll).length, cnt={}; let un=0, out=STAFF.filter(isOut).length;
+    STAFF.forEach(s=>{ const a=dAll(s); if(!a.length) un++; a.forEach(d=>{ cnt[d]=(cnt[d]||0)+1; }); });
+    const chip=(l,v,strong,act,click)=>'<div'+(click?' onclick="'+click+'" style="cursor:pointer;':' style="')+'background:'+(act?'#fff3e8':(strong?'var(--nvl,#eef2ff)':'#f8fafc'))+';border:1px solid '+(act?'var(--og,#E8671A)':'#e2e8f0')+';border-radius:9px;padding:6px 12px;min-width:84px"><div style="font-size:17px;font-weight:700;line-height:1.2">'+v+'</div><div style="font-size:10.5px;color:var(--gr,#64748b)">'+esc(l)+'</div></div>';
+    let h=chip('Total staff',STAFF.length,true)+chip('On payroll',on,true);
+    DEPTS.forEach(d=>{ if(cnt[d]) h+=chip(d,cnt[d],false,srDept===d,'s2sDeptFilter(\''+d.replace(/'/g,"\\'")+'\')'); });
+    if(un) h+=chip('Unassigned',un,false,srDept==='Unassigned','s2sDeptFilter(\'Unassigned\')');
+    if(out) h+=chip('Outsourced',out,false,srDept==='__out','s2sDeptFilter(\'__out\')');
+    box.innerHTML=h;
+  }
+  const list=STAFF.filter(s=>{
+    if(filt&&(s.s||'Active')!==filt) return false;
+    if(srDept==='__out'&&!isOut(s)) return false;
+    if(srDept==='Unassigned'&&dAll(s).length) return false;
+    if(srDept&&srDept!=='__out'&&srDept!=='Unassigned'&&dAll(s).indexOf(srDept)<0) return false;
+    if(!q) return true;
+    return (s.n+' '+(s.r||'')+' '+(s.d||'')+' '+(s.d2||'')+' '+(s.vendor||'')).toLowerCase().includes(q);
+  });
+  const cnt=$('sr-count'); if(cnt) cnt.textContent=list.length+' of '+STAFF.length+' staff · '+STAFF.filter(isOnPayroll).length+' on payroll'+(srDept?' · filtered (tap the chip again to clear)':'');
+  if(!list.length){ body.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--gr);padding:16px">No staff match that search.</td></tr>'; return; }
+  body.innerHTML=list.map(s=>{
+    const sal=sals[s.id]||{}, on=isOnPayroll(s), also=dAlso(s);
+    const dep=isDept(s.d)?esc(s.d):'<span style="color:var(--gr)">Unassigned</span>';
+    const outB=isOut(s)?'<div style="margin-top:2px"><span class="bdg ba" title="Employed by another company, which provides their insurance">Outsourced'+(s.vendor?' · '+esc(s.vendor):'')+'</span></div>':'';
+    return '<tr>'+
+      '<td><strong>'+esc(s.n)+'</strong><div style="font-size:9.5px;color:var(--gr)">'+esc(s.id)+'</div></td>'+
+      '<td style="color:var(--gr)">'+esc(s.r||'—')+'</td>'+
+      '<td>'+dep+(also.length?'<div style="font-size:9.5px;color:var(--gr)">also: '+esc(also.join('; '))+'</div>':'')+'</td>'+
+      '<td>'+esc(s.cat||'—')+outB+'</td>'+
+      '<td><span class="bdg '+(on?'bg':'br')+'">'+esc(s.s||'Active')+'</span></td>'+
+      '<td style="font-size:10.5px">'+esc(s.acct||'—')+'<div style="color:var(--gr)">'+esc(s.bank||'')+'</div></td>'+
+      '<td style="font-weight:600">'+(sal.gross?NGN(sal.gross):'<span style="color:var(--rd);font-size:10.5px">not set</span>')+'</td>'+
+      '<td>'+(on?(sal.gross?'<span class="bdg bg">Yes</span>':'<span class="bdg ba">Needs salary</span>'):'<span class="bdg br">No</span>')+'</td>'+
+      '<td style="display:flex;gap:3px"><button class="btn sm" onclick="openStaffEdit(\''+s.id+'\')" title="Edit"><i class="ti ti-edit"></i></button>'+(sal.gross?'<button class="btn sm" onclick="viewSlip(\''+s.id+'\')" title="Payslip"><i class="ti ti-file-text"></i></button>':'')+'</td></tr>';
+  }).join('');
+};
+
+/* ── staff record: department, second department, employer, insurance ── */
+const _ose612=openStaffEdit;
+window.openStaffEdit=openStaffEdit=function(id){
+  _ose612(id);
+  const s=id?STAFF.find(x=>x.id===id):null, set=(i,v)=>{ const e=$(i); if(e) e.value=v==null?'':v; };
+  set('st-d',s&&isDept(s.d)?s.d:''); set('st-d2',s?(dAlso(s)[0]||''):'');
+  set('st-emp',s&&isOut(s)?'outsourced':'direct'); set('st-vendor',s?(s.vendor||''):'');
+  const n=$('st-insn'), g=$('st-insg'); if(n) n.checked=s?covered(s,'nsitf'):true; if(g) g.checked=s?covered(s,'gli'):true;
+  const e=$('st-emp'); if(e) e.onchange=function(){ const o=e.value==='outsourced'; if(n) n.checked=!o; if(g) g.checked=!o; const v=$('st-vendor'); if(v) v.parentNode.style.opacity=o?1:.55; };
+  if(e) e.onchange();
+};
+const _sse612=saveStaffEdit;
+window.saveStaffEdit=saveStaffEdit=function(){
+  const target=S.stTarget, nm=(($('st-n')||{}).value||'').trim();
+  const d2=(($('st-d2')||{}).value||''), emp=(($('st-emp')||{}).value||'direct'), vendor=(($('st-vendor')||{}).value||'').trim();
+  const insN=!!(($('st-insn')||{}).checked), insG=!!(($('st-insg')||{}).checked);
+  _sse612();
+  try{
+    const rec=target?STAFF.find(x=>x.id===target):STAFF.filter(x=>x.n===nm).pop();
+    if(!rec) return;
+    rec.d2=(d2&&d2!==rec.d)?d2:''; rec.emp=emp==='outsourced'?'outsourced':'direct'; rec.vendor=rec.emp==='outsourced'?vendor:'';
+    rec.insNsitf=insN; rec.insGli=insG;
+    saveStaff(); saveMeta(rec); pushStaffMeta(rec); refreshPayrollViews();
+  }catch(e){}
+};
+
+/* ── schedules only list the people who are on the insurance ── */
+const schedRowsRaw=schedRows;
+schedRows=function(period){
+  const d=schedRowsRaw(period), keep=[], out=[];
+  d.rows.forEach(r=>{ const s=STAFF.find(q=>q.id===r.id)||{}; r.dept=dPrimary(s); r.also=dAlso(s); r.emp=isOut(s); r.vendor=s.vendor||''; (covered(s,'nsitf')?keep:out).push(r); });
+  d.all=d.rows; d.rows=keep; d.excluded=out; return d;
+};
+let gliOut=[];
+gliRows=function(){
+  const sals=getSalaries(), c=cfg(), keep=[]; gliOut=[];
+  STAFF.filter(s=>isOnPayroll(s)&&sals[s.id]&&sals[s.id].gross).forEach(s=>{
+    const g=+sals[s.id].gross||0, k=compsFor(s.id,g), ate=(c.gliBasis==='gross'?g:(k.basic+k.housing+k.transport))*12;
+    const r={id:s.id,n:s.n,r:s.r||'',dept:dPrimary(s),dob:s.dob||'',start:s.start||'',gross:g,ate:ate,sum:ate*c.gli,vendor:s.vendor||''};
+    (covered(s,'gli')?keep:gliOut).push(r);
+  });
+  return keep;
+};
+function exclNote(list,what){
+  if(!list.length) return '';
+  return 'Not on this '+what+' (insured by their own employer): '+list.map(r=>r.n+(r.vendor&&r.vendor!==r.n?' ('+r.vendor+')':'')).join(', ')+'.';
+}
+nsitfTable=function(rows,t){
+  const th=['S/N','Staff ID','Name of employee','Designation','Department','Date of employment','Basic','Housing','Transport','Other allowances','Benefits','Gross pay','Pension (employee)','NHF','PAYE tax','Other deductions','Net pay'];
+  const body=rows.map((r,i)=>'<tr><td class="c">'+(i+1)+'</td><td>'+esc(r.id)+'</td><td>'+esc(r.n)+(r.days!=null&&r.of&&r.days<r.of?'<div style="font-size:8px;color:#b45309">'+r.days+' of '+r.of+' days</div>':'')+'</td><td>'+esc(r.r)+'</td><td>'+esc(r.dept||'')+'</td><td>'+esc(dstr(r.start))+'</td>'+
+    [r.basic,r.housing,r.transport,r.allow,r.benefit,r.gross,r.pension,r.nhf,r.paye,r.other,r.net].map(v=>'<td class="r">'+f2(v)+'</td>').join('')+'</tr>').join('');
+  const tot='<tr style="font-weight:700;background:#f1f5f9"><td colspan="6" class="r">TOTAL ('+rows.length+' staff)</td>'+[t.basic,t.housing,t.transport,t.allow,t.benefit,t.gross,t.pension,t.nhf,t.paye,t.other,t.net].map(v=>'<td class="r">'+f2(v)+'</td>').join('')+'</tr>';
+  return '<table><thead><tr>'+th.map((h,i)=>'<th'+(i>5?' class="r"':'')+'>'+h+'</th>').join('')+'</tr></thead><tbody>'+body+tot+'</tbody></table>';
+};
+gliTable=function(rows){
+  const c=cfg(), tG=rows.reduce((a,r)=>a+r.gross,0), tA=rows.reduce((a,r)=>a+r.ate,0), tS=rows.reduce((a,r)=>a+r.sum,0);
+  const th=['S/N','Staff ID','Name of employee','Designation','Department','Date of birth','Date of employment','Monthly gross','Annual total emolument','Multiple','Sum assured'];
+  const body=rows.map((r,i)=>'<tr><td class="c">'+(i+1)+'</td><td>'+esc(r.id)+'</td><td>'+esc(r.n)+'</td><td>'+esc(r.r)+'</td><td>'+esc(r.dept||'')+'</td><td>'+esc(dstr(r.dob))+'</td><td>'+esc(dstr(r.start))+'</td><td class="r">'+f2(r.gross)+'</td><td class="r">'+f2(r.ate)+'</td><td class="c">'+c.gli+'x</td><td class="r">'+f2(r.sum)+'</td></tr>').join('');
+  return {html:'<table><thead><tr>'+th.map((h,i)=>'<th'+(i>6?' class="r"':'')+'>'+h+'</th>').join('')+'</tr></thead><tbody>'+body+'<tr style="font-weight:700;background:#f1f5f9"><td colspan="7" class="r">TOTAL ('+rows.length+' staff)</td><td class="r">'+f2(tG)+'</td><td class="r">'+f2(tA)+'</td><td></td><td class="r">'+f2(tS)+'</td></tr></tbody></table>',tG:tG,tA:tA,tS:tS};
+};
+function deptSummaryHTML(rows,field){
+  const m={}; rows.forEach(r=>{ const d=r.dept||'Unassigned'; (m[d]=m[d]||{n:0,g:0}); m[d].n++; m[d].g+=(+r[field]||0); });
+  const order=DEPTS.concat(['Unassigned']).filter(d=>m[d]);
+  return '<table style="margin-top:12px;max-width:620px"><thead><tr><th>Department</th><th class="r">Staff</th><th class="r">'+(field==='gross'?'Gross pay':'Total')+'</th></tr></thead><tbody>'+order.map(d=>'<tr><td>'+esc(d)+'</td><td class="r">'+m[d].n+'</td><td class="r">'+f2(m[d].g)+'</td></tr>').join('')+'</tbody></table>';
+}
+const _print612=window.s2sSchedPrint;
+window.s2sSchedPrint=function(kind){
+  if(kind==='nsitf'||kind==='gli'){
+    // reuse the v6.11 layout, then add the department summary and the exclusion note
+    const w0=window.open; let cap=null;
+    window.open=function(){ cap={buf:'',document:{write:function(h){ cap.buf+=h; },close:function(){}},focus:function(){},print:function(){}}; return cap; };
+    try{ _print612(kind); }finally{ window.open=w0; }
+    if(!cap) return;
+    let html=cap.buf;
+    const period=periodNow();
+    let extra='';
+    if(kind==='nsitf'){ const d=schedRows(period); extra=deptSummaryHTML(d.rows,'gross')+(d.excluded.length?'<div style="font-size:9.5px;margin-top:8px;color:#475569">'+esc(exclNote(d.excluded,'schedule'))+'</div>':''); }
+    else { const rows=gliRows(); extra=deptSummaryHTML(rows.map(r=>Object.assign({},r,{gross:r.sum})),'gross').replace('Gross pay','Sum assured')+(gliOut.length?'<div style="font-size:9.5px;margin-top:8px;color:#475569">'+esc(exclNote(gliOut,'schedule'))+'</div>':''); }
+    html=html.replace('<div class="sig">',extra+'<div class="sig">');
+    const w=window.open('','','width=1180,height=820'); if(!w){ toast('Enable pop-ups to print','ti-alert-circle'); return; }
+    w.document.write(html); w.document.close(); setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} },450);
+    return;
+  }
+  _print612(kind);
+};
+const _csv612=window.s2sSchedCSV;
+window.s2sSchedCSV=function(kind){
+  if(!canViewPayroll(CU)){ toast('Payroll is restricted','ti-lock'); return; }
+  const period=periodNow(), c=cfg(), r2=n=>Math.round((+n||0)*100)/100;
+  if(kind==='nsitf'){
+    const d=schedRows(period); if(!d.rows.length){ toast('No staff on this schedule for '+period,'ti-alert-circle'); return; }
+    const t=totals(d.rows);
+    const out=[['S/N','Staff ID','Name of employee','Designation','Department','Date of employment','Days paid','Days in period','Basic','Housing','Transport','Other allowances','Benefits','Gross pay','Pension (employee)','NHF','PAYE tax','Other deductions','Total deductions','Net pay','Employer pension']];
+    d.rows.forEach((r,i)=>out.push([i+1,r.id,r.n,r.r,r.dept,dstr(r.start),r.days,r.of,r2(r.basic),r2(r.housing),r2(r.transport),r2(r.allow),r2(r.benefit),r2(r.gross),r2(r.pension),r2(r.nhf),r2(r.paye),r2(r.other),r2(r.totalDed),r2(r.net),r2(r.erPension)]));
+    out.push(['','','TOTAL','','','','','',r2(t.basic),r2(t.housing),r2(t.transport),r2(t.allow),r2(t.benefit),r2(t.gross),r2(t.pension),r2(t.nhf),r2(t.paye),r2(t.other),r2(t.totalDed),r2(t.net),r2(t.erPension)]);
+    out.push([]); out.push(['NSITF contribution ('+c.nsitf+'% of total monthly payroll)',r2(t.gross*c.nsitf/100)]);
+    if(d.excluded.length){ out.push([]); out.push([exclNote(d.excluded,'schedule')]); }
+    dl('NSITF_payroll_schedule_'+period.replace(/\s+/g,'_')+'.csv',out); toast('NSITF schedule exported ✓','ti-download');
+  } else if(kind==='gli'){
+    const rows=gliRows(); if(!rows.length){ toast('No staff on the Group Life schedule','ti-alert-circle'); return; }
+    const out=[['S/N','Staff ID','Name of employee','Designation','Department','Date of birth','Date of employment','Monthly gross','Annual total emolument','Multiple','Sum assured']];
+    rows.forEach((r,i)=>out.push([i+1,r.id,r.n,r.r,r.dept,dstr(r.dob),dstr(r.start),r2(r.gross),r2(r.ate),c.gli,r2(r.sum)]));
+    out.push(['','','TOTAL','','','','',r2(rows.reduce((a,r)=>a+r.gross,0)),r2(rows.reduce((a,r)=>a+r.ate,0)),'',r2(rows.reduce((a,r)=>a+r.sum,0))]);
+    if(gliOut.length){ out.push([]); out.push([exclNote(gliOut,'schedule')]); }
+    dl('Group_Life_schedule.csv',out); toast('Group Life schedule exported ✓','ti-download');
+  } else _csv612(kind);
+};
+
+/* ── payroll printed by department ── */
+window.s2sPrintByDept=function(){
+  if(!canViewPayroll(CU)){ toast('Payroll is restricted','ti-lock'); return; }
+  const period=periodNow(), d=schedRowsRaw(period);
+  if(!d.rows.length){ toast('No staff on payroll for '+period,'ti-alert-circle'); return; }
+  const rows=d.rows.map(r=>{ const s=STAFF.find(q=>q.id===r.id)||{}; return Object.assign({},r,{dept:dPrimary(s),also:dAlso(s),cat:s.cat||'',out:isOut(s),vendor:s.vendor||'',acct:s.acct||'',bank:s.bank||''}); });
+  const order=DEPTS.concat(['Unassigned']).filter(x=>rows.some(r=>r.dept===x));
+  let grand=0, body='<div class="s2s-page">'+s2sHead('Payroll by Department')+'<div style="text-align:center;font-weight:700;font-size:12.5px;margin:-6px 0 4px">FOR '+esc(period.toUpperCase())+'</div>'+
+    '<div style="text-align:center;font-size:10px;color:#475569;margin-bottom:10px">'+(d.saved?'Saved payroll run of '+new Date(d.saved.when).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}):'Projection from the current salary register')+' · part-month pay by '+BASIS_LABEL[(d.saved&&d.saved.basis)||curBasis()]+'</div>';
+  const sum=[];
+  order.forEach(dp=>{
+    const rs=rows.filter(r=>r.dept===dp); let sub=0;
+    const tr=rs.map((r,i)=>{ sub+=r.gross; return '<tr><td class="c">'+(i+1)+'</td><td>'+esc(r.n)+(r.days!=null&&r.of&&r.days<r.of?'<div style="font-size:9.5px;color:#475569">'+r.days+' of '+r.of+' days</div>':'')+'</td><td>'+esc(r.r||'')+'</td><td>'+esc(r.cat||'')+(r.out?' (outsourced'+(r.vendor?' - '+esc(r.vendor):'')+')':'')+'</td><td>'+esc(r.acct)+'</td><td>'+esc(r.bank)+'</td><td class="r">'+NGN(r.gross)+'</td></tr>'; }).join('');
+    grand+=sub; sum.push([dp,rs.length,sub]);
+    body+='<div style="font-weight:700;font-size:12px;margin:14px 0 3px;color:#0D1B3E">'+esc(dp.toUpperCase())+'</div><table><thead><tr><th style="width:28px">S/N</th><th>Staff Name</th><th>Designation</th><th>Category</th><th>Account No.</th><th>Bank</th><th style="width:105px">Amount</th></tr></thead><tbody>'+tr+'<tr><td colspan="6" class="r b">TOTAL</td><td class="r b">'+NGN(sub)+'</td></tr></tbody></table>';
+  });
+  const w=numToWordsNaira(grand);
+  body+='<div style="font-weight:700;font-size:12px;margin:18px 0 3px;color:#0D1B3E">DEPARTMENTS</div><table><thead><tr><th style="width:28px">S/N</th><th>Department</th><th class="r" style="width:70px">Staff</th><th class="r" style="width:140px">Amount</th></tr></thead><tbody>'+sum.map((r,i)=>'<tr><td class="c">'+(i+1)+'</td><td>'+esc(r[0])+'</td><td class="r">'+r[1]+'</td><td class="r">'+NGN(r[2])+'</td></tr>').join('')+'<tr><td colspan="2" class="r b">TOTAL</td><td class="r b">'+rows.length+'</td><td class="r b">'+NGN(grand)+'</td></tr></tbody></table>'+
+    '<div style="text-align:center;font-weight:700;margin-top:14px;font-size:12.5px">'+w.charAt(0).toUpperCase()+w.slice(1)+'</div>'+
+    (rows.some(r=>r.also.length)?'<div style="font-size:9.5px;color:#475569;margin-top:8px">Staff who work across two departments are listed and costed under their main department only.</div>':'')+'</div>';
+  s2sPrintWindow('S2S Payroll by department - '+period,body);
+};
+
+/* ── coverage tab (who is on the insurance schedules) ── */
+let covQ='';
+window.s2sCovFilter=function(v){ covQ=v||''; renderCompliance(); const e=$('cov-q'); if(e){ e.focus(); e.setSelectionRange(e.value.length,e.value.length); } };
+window.s2sCovSet=function(id,field,val){
+  const s=STAFF.find(x=>x.id===id); if(!s) return;
+  if(field==='emp'){ s.emp=val==='outsourced'?'outsourced':'direct'; s.insNsitf=!isOut(s); s.insGli=!isOut(s); if(!isOut(s)) s.vendor=''; }
+  else if(field==='vendor') s.vendor=String(val||'').trim();
+  else if(field==='nsitf') s.insNsitf=!!val;
+  else if(field==='gli') s.insGli=!!val;
+  saveStaff(); saveMeta(s); pushStaffMeta(s); renderCompliance(); try{ renderStaffRegister(); }catch(e){}
+};
+window.s2sCovBulk=function(kind,val){
+  STAFF.filter(isOnPayroll).forEach(s=>{
+    if(covQ && !(s.n+' '+(s.r||'')+' '+dPrimary(s)+' '+(s.vendor||'')).toLowerCase().includes(covQ.toLowerCase())) return;
+    s[kind==='nsitf'?'insNsitf':'insGli']=!!val; saveMeta(s); pushStaffMeta(s);
+  });
+  saveStaff(); renderCompliance();
+};
+function covTab(){
+  const c=cfg(), all=STAFF.filter(isOnPayroll);
+  const q=covQ.toLowerCase();
+  const list=all.filter(s=>!q||(s.n+' '+(s.r||'')+' '+dPrimary(s)+' '+(s.vendor||'')).toLowerCase().includes(q));
+  const n=all.filter(s=>covered(s,'nsitf')).length, g=all.filter(s=>covered(s,'gli')).length, out=all.filter(isOut).length;
+  let h='<div style="font-size:11.5px;color:var(--gr);margin-bottom:8px">Tick who is on each schedule. Staff employed by another company (security, cleaning and similar) are insured by that company, so they are switched off by default. Changes save at once.</div>';
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px">'+[['On payroll',all.length],['On NSITF schedule',n],['On Group Life schedule',g],['Outsourced',out]].map(x=>'<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:6px 11px"><div style="font-size:14px;font-weight:700">'+x[1]+'</div><div style="font-size:10.5px;color:var(--gr)">'+x[0]+'</div></div>').join('')+'</div>';
+  h+='<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px"><input id="cov-q" class="srch" style="max-width:240px" placeholder="Search name, department or company" value="'+esc(covQ)+'" oninput="s2sCovFilter(this.value)">'+
+    '<button class="btn sm" onclick="s2sCovBulk(\'nsitf\',true)">All on NSITF</button><button class="btn sm" onclick="s2sCovBulk(\'nsitf\',false)">None on NSITF</button><button class="btn sm" onclick="s2sCovBulk(\'gli\',true)">All on Group Life</button><button class="btn sm" onclick="s2sCovBulk(\'gli\',false)">None on Group Life</button></div>';
+  h+='<div style="overflow-x:auto"><table><thead><tr><th>Staff</th><th>Department</th><th>Employed by</th><th>Company</th><th style="text-align:center">NSITF</th><th style="text-align:center">Group Life</th></tr></thead><tbody>'+
+    list.map(s=>'<tr><td><strong>'+esc(s.n)+'</strong><div style="font-size:9.5px;color:var(--gr)">'+esc(s.r||'')+'</div></td><td style="font-size:11px">'+esc(dPrimary(s))+'</td>'+
+      '<td><select class="fsel" style="height:28px;font-size:11.5px" onchange="s2sCovSet(\''+s.id+'\',\'emp\',this.value)"><option value="direct"'+(isOut(s)?'':' selected')+'>Slum2School</option><option value="outsourced"'+(isOut(s)?' selected':'')+'>Another company</option></select></td>'+
+      '<td>'+(isOut(s)?'<input style="width:150px;height:28px;font-size:11.5px" value="'+esc(s.vendor||'')+'" placeholder="e.g. Amala Security" onchange="s2sCovSet(\''+s.id+'\',\'vendor\',this.value)">':'<span style="color:var(--gr)">-</span>')+'</td>'+
+      '<td style="text-align:center"><input type="checkbox"'+(covered(s,'nsitf')?' checked':'')+' onchange="s2sCovSet(\''+s.id+'\',\'nsitf\',this.checked)"></td>'+
+      '<td style="text-align:center"><input type="checkbox"'+(covered(s,'gli')?' checked':'')+' onchange="s2sCovSet(\''+s.id+'\',\'gli\',this.checked)"></td></tr>').join('')+'</tbody></table></div>';
+  return h;
+}
+const _rc612=renderCompliance;
+renderCompliance=function(){
+  _rc612();
+  const host=$('s2s-compliance-card'); if(!host||host.style.display==='none') return;
+  // add the fourth tab button
+  const bar=host.querySelector('div[style*="margin:2px 0 10px"]');
+  if(bar&&!bar.querySelector('[data-cov]')){
+    const b=document.createElement('button'); b.className='btn sm'+(cmpTab===3?' p':''); b.setAttribute('data-cov','1'); b.textContent='Who is insured'; b.onclick=function(){ s2sCmpTab(3); };
+    bar.appendChild(b);
+  }
+  if(cmpTab===3){
+    // replace the content below the tab bar with the coverage table
+    while(bar&&bar.nextSibling) bar.parentNode.removeChild(bar.nextSibling);
+    const d=document.createElement('div'); d.innerHTML=covTab(); bar.parentNode.appendChild(d);
+  }
+};
+window.s2sRenderCompliance=renderCompliance;
+
+/* ── run the one-off sorting after sign-in and after every cloud refresh ── */
+const _rp612=window.renderPayroll;
+window.renderPayroll=renderPayroll=function(){ if(!S.seeded612){ S.seeded612=true; runSeed(); } _rp612.apply(this,arguments); };
+const _hyd612=window.sbHydrate;
+window.sbHydrate=sbHydrate=async function(){
+  await _hyd612.apply(this,arguments);
+  let rows=null;
+  try{ if(SB&&S.cloudUser){ const q=await SB.from('staff').select('*'); if(q.data&&!q.error) rows=q.data; } }catch(e){}
+  try{ mergeMeta(rows); }catch(e){}
+  S.seeded612=false;
+  try{ runSeed(); refreshPayrollViews(); }catch(e){}
+};
+
 })();
 
 </script>
-<script id="s2s-staffsum">
-(function(){
-  function draw(){
-    try{
-      var card=document.getElementById('staff-register-card'); if(!card||typeof STAFF==='undefined') return;
-      var box=document.getElementById('sr-summary');
-      if(!box){ box=document.createElement('div'); box.id='sr-summary'; box.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 12px';
-        var anchor=card.querySelector('.frow'); if(anchor) anchor.parentNode.insertBefore(box,anchor); else card.appendChild(box); }
-      var on=STAFF.filter(function(s){ try{ return isOnPayroll(s); }catch(e){ return true; } }).length;
-      var cats={}; STAFF.forEach(function(s){ var c=s.cat||s.d||'Other'; cats[c]=(cats[c]||0)+1; });
-      var chip=function(l,v,strong){ return '<div style="background:'+(strong?'var(--nvl,#eef2ff)':'#f8fafc')+';border:1px solid #e2e8f0;border-radius:9px;padding:6px 12px;min-width:84px"><div style="font-size:17px;font-weight:700;line-height:1.2">'+v+'</div><div style="font-size:10.5px;color:var(--gr,#64748b)">'+l+'</div></div>'; };
-      var h=chip('Total staff',STAFF.length,true)+chip('On payroll',on,true);
-      Object.keys(cats).sort().forEach(function(k){ h+=chip(k,cats[k]); });
-      box.innerHTML=h;
-    }catch(e){}
-  }
-  var prev=window.renderStaffRegister;
-  if(typeof prev==='function'){ window.renderStaffRegister=renderStaffRegister=function(){ var r=prev.apply(this,arguments); draw(); return r; }; }
-  window.addEventListener('load',function(){ setTimeout(draw,1500); });
-})();
-</script></body>
+</body>
 </html>
