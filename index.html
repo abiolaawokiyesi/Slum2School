@@ -1141,14 +1141,14 @@ const S2S_BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAY
           </div>
           <!-- ══ COMPANY FORMAT · exact Memo + Requisition + Vendor invoice ══ -->
           <div id="rq-co-wrap" style="display:none">
-            <datalist id="co-dl-staff"></datalist><datalist id="co-dl-title"></datalist><datalist id="co-dl-team"></datalist><datalist id="co-dl-dept"></datalist><datalist id="co-dl-from"></datalist><datalist id="co-dl-to"></datalist><datalist id="co-dl-subject"></datalist><datalist id="co-dl-pay"></datalist><datalist id="co-dl-desc"></datalist>
+            <style>.cb-btn{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:#64748b;width:28px;height:28px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center}.cb-btn:hover{background:#f1f5f9}.cb-list{position:absolute;left:0;right:0;top:100%;margin-top:3px;z-index:60;background:#fff;border:1px solid var(--bd);border-radius:9px;box-shadow:0 8px 22px rgba(15,23,42,.16);max-height:230px;overflow:auto;padding:4px}.cb-o{padding:8px 10px;border-radius:6px;cursor:pointer;font-size:12.5px;display:flex;align-items:center;justify-content:space-between;gap:8px}.cb-o:hover,.cb-o.on{background:#fff4ec}.cb-s{font-size:10px;font-weight:700;color:#E8671A;background:#ffedd5;border-radius:99px;padding:1px 7px}.cb-n{padding:9px 10px;font-size:11.5px;color:#64748b}</style><datalist id="co-dl-staff"></datalist><datalist id="co-dl-title"></datalist><datalist id="co-dl-dept"></datalist><datalist id="co-dl-from"></datalist><datalist id="co-dl-to"></datalist><datalist id="co-dl-subject"></datalist><datalist id="co-dl-pay"></datalist><datalist id="co-dl-desc"></datalist>
             <div class="fl-row">
               <div class="fl"><label>Date</label><input id="co-date" type="date"></div>
               <div class="fl"><label>Name of staff raising the requisition</label><input id="co-name" list="co-dl-staff" autocomplete="off" placeholder="Start typing a name" oninput="coNamePicked()" onchange="coNamePicked()"></div>
             </div>
             <div class="fl-row">
               <div class="fl"><label>Job title</label><input id="co-title" list="co-dl-title" autocomplete="off"></div>
-              <div class="fl"><label>Team</label><input id="co-team" list="co-dl-team" autocomplete="off" oninput="coTeamTyped()"></div>
+              <div class="fl"><label>Team <span style="color:var(--gn);font-size:10px">&middot; choose from the list or type your own</span></label><div class="cb-wrap" style="position:relative"><input id="co-team" autocomplete="off" placeholder="Choose or type a team" style="padding-right:34px" onfocus="coTeamOpen()" oninput="coTeamTyped();coTeamOpen()"><button type="button" class="cb-btn" onclick="coTeamToggle()" aria-label="Show all teams" title="Show all teams"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button><div id="co-team-list" class="cb-list" style="display:none"></div></div></div>
               <div class="fl"><label>Department</label><input id="co-dept" list="co-dl-dept" autocomplete="off"></div>
             </div>
             <div class="fl-row">
@@ -7804,14 +7804,15 @@ html,body{margin:0;padding:0;background:#fff;color:#000}
 @media screen{body{background:#777}.cf-sh{margin:10px auto}}
 `;
 
-function layer(){
+function layer(o){
+  o=o||{};
   return `<img class="cf-ab" alt="" src="${IMG.bg}" style="left:-160.45pt;top:-1.9pt;width:1167pt;height:876.75pt">`+
     `<img class="cf-ab" alt="" src="${IMG.logo}" style="left:13.15pt;top:9.6pt;width:126.75pt;height:60.75pt">`+
     `<img class="cf-ab" alt="" src="${IMG.copy}" style="left:38.74pt;top:798.43pt;width:184.5pt;height:44.25pt">`+
-    `<img class="cf-ab" alt="" src="${IMG.memo}" style="left:360.75pt;top:29.4pt;width:225.75pt;height:45pt">`+
-    `<img class="cf-ab" alt="" src="${IMG.bar}" style="left:24.75pt;top:77.82pt;width:6pt;height:686.25pt">`;
+    (o.memo===false?'':`<img class="cf-ab" alt="" src="${IMG.memo}" style="left:360.75pt;top:29.4pt;width:225.75pt;height:45pt">`)+
+    (o.bar===false?'':`<img class="cf-ab" alt="" src="${IMG.bar}" style="left:24.75pt;top:77.82pt;width:6pt;height:686.25pt">`);
 }
-function sheet(inner){ return `<div class="cf-sh">${layer()}<div class="cf-flow">${inner}</div></div>`; }
+function sheet(inner,o){ return `<div class="cf-sh">${layer(o)}<div class="cf-flow">${inner}</div></div>`; }
 
 /* first-baseline offset of a line box, so each block lands on the PDF's baseline */
 const OFF={t:(s,l)=>(l-1.107*s)/2+.891*s, c:(s,l)=>(l-s)/2+.75*s};
@@ -7963,6 +7964,8 @@ function printFrame(html){
 
 /* ═════════════════ 2 · VENDOR INVOICE STORAGE ═════════════════ */
 
+window.S2S_CF={PRINT_CSS:PRINT_CSS,layer:layer,sheet:sheet,printFrame:printFrame,esc:esc,money:money,wordsOf:wordsOf};
+
 const IDB_NAME='s2s_invoices', IDB_STORE='invoices', BUCKET='requisition-invoices';
 function idb(){ return new Promise((res,rej)=>{ const r=indexedDB.open(IDB_NAME,1);
   r.onupgradeneeded=()=>r.result.createObjectStore(IDB_STORE); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
@@ -8071,19 +8074,23 @@ function refreshLists(){
   const P=people(), pr=profile(), hist=history().filter(r=>r.tpl==='company');
   const vals=Object.values(P), prv=Object.values(pr);
   const DEPT_NAMES=['External Relations and Partnerships','Finance','Admin, Procurement and Logistics','Program Management','Media and Communication','Human Resource','Growth and Sustainability'];
-  const teams=prv.map(x=>x.team).concat(vals.map(x=>inferTeam(x.r,x.d)),['Admin and Logistics'],DEPT_NAMES);
+  const teams=TEAMS.concat(prv.map(x=>x.team),vals.map(x=>inferTeam(x.r,x.d)));
   fill('co-dl-staff',vals.map(x=>x.n).sort());
   fill('co-dl-title',prv.map(x=>x.title).concat(vals.map(x=>x.r),[CO_DEFAULTS.finT,CO_DEFAULTS.edT]));
-  fill('co-dl-team',teams);
+  window.__coTeams=teams.filter(Boolean);
   fill('co-dl-dept',prv.map(x=>x.dept).concat(teams.map(deptOf)));
-  fill('co-dl-from',prv.map(x=>x.from).concat(teams.map(up)));
+  fill('co-dl-from',prv.map(x=>x.from).concat(teams.map(fromOf)));
   fill('co-dl-to',[CO_DEFAULTS.to].concat(hist.map(r=>r.co&&up(r.co.to))));
   fill('co-dl-subject',hist.map(r=>up(r.subject)));
   fill('co-dl-pay',prv.map(x=>x.detail).concat(hist.map(r=>r.co&&r.co.detail),vals.filter(x=>x.acct).map(payOf)));
   fill('co-dl-desc',descHistory().map(x=>x.desc));
 }
-const TEAM_HINTS=[[/admin|logistic|procure|facilit/i,'Admin and Logistics'],[/financ|account/i,'Finance'],[/media|communic|content|story|document|video|design/i,'Media and Communication'],[/program|education|safeguard|monitor/i,'Program Management'],[/human|hr\b|people|volunteer|talent/i,'Human Resource'],[/growth|sustain|fundrais/i,'Growth and Sustainability'],[/external|partnership|relation/i,'External Relations and Partnerships']];
-const inferTeam=(role,dept)=>{ const t=String(dept||'').trim(); if(t&&!NOT_DEPT.test(t)) return t.replace(/^Admin, Procurement and Logistics$/,'Admin and Logistics'); const h=TEAM_HINTS.find(x=>x[0].test(role||'')); return h?h[1]:''; };
+const TEAMS=['Admin and Logistics','Executive Office','Finance','Growth and Fundraising','Human Resource','Media and Communication','Partnerships','Programs','Projects','Volunteer Management','Operations','Education'];
+const DEPT_TO_TEAM={'program management':'Programs','external relations and partnerships':'Partnerships','growth and sustainability':'Growth and Fundraising','admin, procurement and logistics':'Admin and Logistics','human resource':'Human Resource','media and communication':'Media and Communication','finance':'Finance'};
+const FROM_MAP={'admin and logistics':'ADMINISTRATION AND LOGISTICS'};
+const fromOf=t=>FROM_MAP[String(t||'').trim().toLowerCase()]||up(t);
+const TEAM_HINTS=[[/executive|(^|[^a-z])ed([^a-z]|$)|chief/i,'Executive Office'],[/admin|logistic|procure|facilit/i,'Admin and Logistics'],[/financ|account/i,'Finance'],[/media|communic|content|story|document|video|design/i,'Media and Communication'],[/partnership|external|relation/i,'Partnerships'],[/growth|sustain|fundrais/i,'Growth and Fundraising'],[/project/i,'Projects'],[/program|safeguard|monitor/i,'Programs'],[/educat|teach/i,'Education'],[/volunteer/i,'Volunteer Management'],[/human|(^|[^a-z])hr([^a-z]|$)|people|talent/i,'Human Resource']];
+const inferTeam=(role,dept)=>{ const t=String(dept||'').trim(); if(t&&DEPT_TO_TEAM[t.toLowerCase()]) return DEPT_TO_TEAM[t.toLowerCase()]; const h=TEAM_HINTS.find(x=>x[0].test(role||''))||TEAM_HINTS.find(x=>x[0].test(NOT_DEPT.test(t)?'':t)); return h?h[1]:''; };
 const deptOf=t=>{ t=String(t||'').trim(); return !t?'':/department$/i.test(t)?t:t+' Department'; };
 const payOf=p=>p.acct?((p.n+' '+(p.bank||'')).trim()+': '+p.acct):'';
 function descHistory(){
@@ -8101,16 +8108,41 @@ window.coNamePicked=function(){
   autoSet('co-title',(pr&&pr.title)||(P&&P.r)||'');
   autoSet('co-team',team);
   autoSet('co-dept',(pr&&pr.dept)||deptOf(team));
-  autoSet('co-from',(pr&&pr.from)||up(team));
+  autoSet('co-from',(pr&&pr.from)||fromOf(team));
   if(val('co-method')==='Fund Transfer') autoSet('co-detail',(pr&&pr.detail)||(P&&payOf(P))||'');
 };
-window.coTeamTyped=function(){ const t=val('co-team'); setIfAuto('co-dept',deptOf(t)); setIfAuto('co-from',up(t)); const c=$('co-team'); if(c)c.dataset.auto=''; };
+function teamList(){
+  const raw=[]; const sug=inferTeam(((typeof CU!=='undefined'&&CU)?CU.role:''),((typeof CU!=='undefined'&&CU)?CU.dept:''));
+  const cur=val('co-team'); const seen={},out=[];
+  (window.__coTeams||TEAMS).forEach(t=>{ t=String(t||'').trim(); const k=t.toLowerCase(); if(t&&!seen[k]){ seen[k]=1; out.push(t); } });
+  const q=cur.toLowerCase(); const exact=out.some(t=>t.toLowerCase()===q);
+  let list=(!q||exact)?out:out.filter(t=>t.toLowerCase().indexOf(q)>=0);
+  const pick=(profile()[val('co-name').toLowerCase()]||{}).team||inferTeam((people()[val('co-name').toLowerCase()]||{}).r,(people()[val('co-name').toLowerCase()]||{}).d)||sug;
+  if(pick){ list=list.filter(t=>t.toLowerCase()!==pick.toLowerCase()); if(!q||exact||pick.toLowerCase().indexOf(q)>=0) list.unshift(pick); }
+  return {list,pick};
+}
+function drawTeams(){
+  const b=$('co-team-list'); if(!b) return;
+  const {list,pick}=teamList(); const cur=val('co-team').toLowerCase();
+  b.innerHTML=list.length?list.map(t=>`<div class="cb-o${t.toLowerCase()===cur?' on':''}" data-v="${esc(t)}">${esc(t)}${pick&&t.toLowerCase()===pick.toLowerCase()?'<span class="cb-s">Suggested</span>':''}</div>`).join(''):'<div class="cb-n">No match. Keep typing to use your own team name.</div>';
+}
+window.coTeamOpen=function(){ const b=$('co-team-list'); if(!b) return; drawTeams(); b.style.display='block'; };
+window.coTeamClose=function(){ const b=$('co-team-list'); if(b) b.style.display='none'; };
+window.coTeamToggle=function(){ const b=$('co-team-list'); if(!b) return; if(b.style.display==='block') coTeamClose(); else { coTeamOpen(); const i=$('co-team'); if(i) i.focus(); } };
+window.coTeamPick=function(v){ set('co-team',v); const e=$('co-team'); if(e) e.dataset.auto=''; setIfAuto('co-dept',deptOf(v)); setIfAuto('co-from',fromOf(v)); coTeamClose(); };
+document.addEventListener('mousedown',function(ev){
+  const o=ev.target&&ev.target.closest?ev.target.closest('#co-team-list .cb-o'):null;
+  if(o){ ev.preventDefault(); coTeamPick(o.getAttribute('data-v')); return; }
+  if(!(ev.target.closest&&ev.target.closest('.cb-wrap'))) coTeamClose();
+});
+document.addEventListener('keydown',function(ev){ if(ev.key==='Escape') coTeamClose(); });
+window.coTeamTyped=function(){ const t=val('co-team'); setIfAuto('co-dept',deptOf(t)); setIfAuto('co-from',fromOf(t)); const c=$('co-team'); if(c)c.dataset.auto=''; };
 window.coSubjectTyped=function(){
   const e=$('co-subject'); if(!e) return;
   const s=e.value.trim();
-  setIfAuto('co-bg',s?'This memo is to request for funds for the '+s.toLowerCase().replace(/\.$/,'')+'.':'');
+  setIfAuto('co-bg',s?'This memo is written to request for funds for the '+s.toLowerCase().replace(/\.$/,'')+'.':'');
   const prev=history().find(r=>r.tpl==='company'&&up(r.subject)===up(s));
-  if(prev&&prev.bg) setIfAuto('co-bg',prev.bg);
+  if(prev&&prev.bg) setIfAuto('co-bg',String(prev.bg).replace(/^This memo is to request/,'This memo is written to request'));
 };
 const DETAIL_LBL={'Fund Transfer':'Fund transferred to','Cash':'Cash: paid to','Cheque':'Cheque written to','Bank Draft':'Bank draft: bank details'};
 window.coMethodChanged=function(){
@@ -8134,7 +8166,7 @@ function coPrefill(){
     set('co-name',nm);
     const P=people()[nm.toLowerCase()];
     if(P||profile()[nm.toLowerCase()]) window.coNamePicked();
-    else { const tm=inferTeam(CU.role,CU.dept); autoSet('co-title',CU.role||''); autoSet('co-team',tm); autoSet('co-dept',deptOf(tm)); autoSet('co-from',up(tm)); }
+    else { const tm=inferTeam(CU.role,CU.dept); autoSet('co-title',CU.role||''); autoSet('co-team',tm); autoSet('co-dept',deptOf(tm)); autoSet('co-from',fromOf(tm)); }
   }
   renderCoInv();
 }
@@ -8266,8 +8298,22 @@ window.saveReq=saveReq=function(){
 
 const markSynced=id=>{ const l=DB.kv.get('requisitions')||[]; const r=l.find(x=>x.id===id); if(r){ delete r._unsynced; DB.kv.set('requisitions',l); } };
 const _insert=window.sbInsertRequisition;
+/* an edited requisition already exists in the cloud: update it instead of inserting a second copy */
+async function updateCloud(d){
+  const row={doc_date:d.date,subject:d.subject,addressed_to:d.to,through:d.through,background:d.bg,purpose:d.purpose,method:d.method,method_detail:d.methodDetail,amount:d.amount,amount_words:d.words,on_behalf:d.onBehalf||null,designation:d.designation,requester_name:d.requester,status:d.status};
+  const u=await SB.from('requisitions').update(row).eq('id',d.id);
+  if(u&&u.error) return {error:u.error};
+  await SB.from('requisition_items').delete().eq('requisition_id',d.id);
+  if(d.items&&d.items.length){
+    const ins=await SB.from('requisition_items').insert(d.items.map((it,i)=>({requisition_id:d.id,sn:i+1,description:it.desc,unit:it.unit||null,amount:(+it.amount||0),account_details:it.acct})));
+    if(ins&&ins.error) return {error:ins.error};
+  }
+  return {error:null};
+}
 window.sbInsertRequisition=sbInsertRequisition=async function(d){
-  const res=await _insert.apply(this,arguments);
+  let exists=false;
+  try{ const q=await SB.from('requisitions').select('id').eq('id',d.id).maybeSingle(); exists=!!(q&&q.data); }catch(e){}
+  const res=exists?await updateCloud(d):await _insert.apply(this,arguments);
   if(res&&res.error) return res;
   const clean=Object.assign({},d); delete clean._unsynced;
   if(clean.tpl==='company'){
@@ -8288,7 +8334,7 @@ window.sbHydrate=sbHydrate=async function(){
   let docs={};
   try{ if(typeof SB!=='undefined'&&SB){ const q=await SB.from('requisitions').select('id,doc'); if(q&&q.data&&!q.error) q.data.forEach(x=>{ if(x.doc) docs[x.id]=x.doc; }); } }catch(e){}
   const seen={};
-  const merged=fresh.map(r=>{ seen[r.id]=1; const src=docs[r.id]||byId[r.id]; if(!src) return r; const m=Object.assign({},r,src,{status:r.status,created:r.created||src.created}); delete m._unsynced; return m; });
+  const merged=fresh.map(r=>{ seen[r.id]=1; if(byId[r.id]&&byId[r.id]._unsynced) return byId[r.id]; const src=docs[r.id]||byId[r.id]; if(!src) return r; const m=Object.assign({},r,src,{status:r.status,created:r.created||src.created}); delete m._unsynced; return m; });
   snap.forEach(r=>{ if(r._unsynced&&!seen[r.id]) merged.unshift(r); });
   DB.kv.set('requisitions',merged);
   try{ renderRequisition(); }catch(e){}
@@ -8325,7 +8371,740 @@ window.reuseReq=reuseReq=function(id){
   toast('Loaded a copy. Attach the new invoice, then save.','ti-copy');
 };
 
+/* ═════════════════ 5 · EDIT A SAVED REQUISITION, OR SAVE A DRAFT AND CONTINUE LATER ═════════════════ */
+
+window.reqEditId=null;
+const EDITABLE=['Draft','Pending'];
+const me=()=>(typeof CU!=='undefined'&&CU)?CU:null;
+const canEdit=r=>{ const u=me(); return !!(r&&u&&EDITABLE.indexOf(r.status||'Pending')>=0&&(u.email===r.email||(typeof canViewPayroll==='function'&&canViewPayroll(u)))); };
+const STD_FIELDS=['rq-subject','rq-bg','rq-purpose','rq-methoddetail','rq-amount','rq-words','rq-for','rq-lm'];
+
+function formButtons(){
+  const card=$('req-form-card'); if(!card) return;
+  const sv=card.querySelector('button[onclick="saveReq()"]'); if(!sv) return;
+  const editing=!!window.reqEditId;
+  sv.innerHTML='<i class="ti ti-device-floppy"></i>'+(editing?'Save changes':'Save requisition');
+  let dr=$('rq-draft-btn');
+  if(!dr){ dr=document.createElement('button'); dr.id='rq-draft-btn'; dr.className='btn'; dr.setAttribute('onclick','saveReqDraft()'); dr.innerHTML='<i class="ti ti-file-pencil"></i>Save draft'; dr.title='Keep what you have typed so far and finish it later'; sv.parentNode.insertBefore(dr,sv.nextSibling); }
+  let bar=$('rq-edit-bar');
+  if(!editing){ if(bar) bar.remove(); return; }
+  if(!bar){ bar=document.createElement('div'); bar.id='rq-edit-bar'; bar.style.cssText='background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:9px;padding:8px 12px;margin-bottom:10px;font-size:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
+    const ch=card.querySelector('.ch'); if(ch&&ch.parentNode) ch.parentNode.insertBefore(bar,ch.nextSibling); else card.insertBefore(bar,card.firstChild); }
+  const r=(DB.kv.get('requisitions')||[]).find(x=>x.id===window.reqEditId)||{};
+  bar.innerHTML='<span style="flex:1;min-width:200px"><strong>'+(r.status==='Draft'?'Continuing a draft':'Editing a saved requisition')+'</strong>'+(r.subject?': '+esc(r.subject):'')+'. Saving replaces it, no copy is made.</span><button class="btn sm" onclick="cancelReqEdit()">Cancel editing</button>';
+}
+function clearForm(){
+  window.reqEditId=null;
+  reqItems=[]; try{ schItems=[]; }catch(e){}
+  STD_FIELDS.forEach(i=>set(i,''));
+  coReset();
+  formButtons();
+}
+window.cancelReqEdit=function(){
+  clearForm();
+  const c=$('req-form-card'); if(c) c.style.display='none';
+};
+const _toggle=window.toggleReqForm;
+window.toggleReqForm=toggleReqForm=function(){
+  const c=$('req-form-card'); if(!c) return;
+  const open=c.style.display!=='none';                      // '' means it is showing
+  if(open){ if(window.reqEditId) clearForm(); c.style.display='none'; return; }   // Cancel / New requisition closes it
+  const r=_toggle.apply(this,arguments);
+  formButtons();
+  return r;
+};
+
+function learn(form){
+  const prs=profile(), k=String(form.requester).toLowerCase();
+  prs[k]={title:form.designation,team:form.co.team,dept:form.co.dept,from:form.co.from,detail:form.method==='Fund Transfer'?form.co.detail:((prs[k]||{}).detail||'')};
+  DB.kv.set('co_profiles',prs);
+  DB.kv.set('co_signatories',{finN:form.co.finN,finT:form.co.finT,edN:form.co.edN,edT:form.co.edT});
+}
+function queueSync(d){
+  try{
+    const q=(DB.kv.get('s2s_outbox')||[]).filter(x=>!(x&&x.kind==='requisition'&&x.payload&&x.payload.id===d.id));
+    DB.kv.set('s2s_outbox',q);
+    if(typeof outboxAdd==='function') outboxAdd('requisition',d);
+  }catch(e){}
+}
+function persist(draft){
+  const co=isCo();
+  if(co&&coBusy){ toast('Please wait, the invoice is still being read','ti-loader'); return; }
+  const form=collectReq();
+  const hasAny=!!(String(form.subject||'').trim()||(form.items&&form.items.length)||(form.schs&&form.schs.length)||(co&&val('co-name')));
+  if(draft){
+    if(!hasAny){ toast('Type a subject or at least one line first, then save the draft','ti-alert-circle'); return; }
+  } else {
+    if(co&&!val('co-name')){ toast('Enter the name of the staff raising the requisition','ti-alert-circle'); return; }
+    if(!form.subject){ toast('Enter a subject','ti-alert-circle'); return; }
+    if(!form.amount){ toast(form.tpl==='scholar'?'Add at least one scholar with a cost':'Add at least one breakdown line with an amount','ti-alert-circle'); return; }
+  }
+  const list=DB.kv.get('requisitions')||[];
+  const idx=window.reqEditId?list.findIndex(x=>x.id===window.reqEditId):-1;
+  const old=idx>=0?list[idx]:null;
+  const d=Object.assign({},form,{id:old?old.id:form.id,created:old?old.created:form.created,
+    status:draft?'Draft':(old&&old.status&&old.status!=='Draft'?old.status:'Pending')});
+  if(old){
+    d.email=old.email;
+    if(!co){ d.requester=old.requester; d.designation=old.designation; }
+    d.updated=new Date().toISOString();
+  }
+  d._unsynced=true;
+  if(old) list[idx]=d; else list.unshift(d);
+  DB.kv.set('requisitions',list);
+  try{ audit(old?'Edited requisition':(draft?'Saved requisition draft':'Raised requisition'),d.subject||'(no subject)',null,{amount:d.amount,status:d.status}); }catch(e){}
+  const files=co?coInv.slice():[];
+  if(!draft&&co&&form.co) learn(form);
+  clearForm();
+  const c=$('req-form-card'); if(c) c.style.display='none';
+  try{ renderRequisition(); }catch(e){}
+  toast(draft?'Draft saved. Open it from My requisitions to continue.':(old?'Changes saved ✓':'Requisition saved ✓'),draft?'ti-file-pencil':'ti-check');
+  const push=()=>{
+    if(cloud()){
+      const p=sbInsertRequisition(d);
+      if(draft) Promise.resolve(p).then(r=>{ if(r&&r.error) console.warn('draft stays on this device:',r.error.message); },()=>{});
+      else sbPush(p,'requisition');
+    } else if(typeof SB_READY!=='undefined'&&SB_READY&&!draft) queueSync(d);
+  };
+  if(co){
+    (files.length?idbPut(d.id,files):idbDel(d.id)).then(push,()=>{ toast('The invoice could not be saved on this device','ti-alert-circle'); push(); });
+  } else push();
+}
+
+const _saveBase=window.saveReq;
+window.saveReq=saveReq=function(){
+  if(window.reqEditId) return persist(false);
+  return _saveBase.apply(this,arguments);
+};
+window.saveReqDraft=function(){ return persist(true); };
+
+window.editReq=async function(id){
+  const r=(DB.kv.get('requisitions')||[]).find(x=>x.id===id); if(!r) return;
+  if(!canEdit(r)){ toast('This requisition is already '+String(r.status||'').toLowerCase()+', so it can no longer be edited. Use Reuse to make a copy.','ti-lock'); return; }
+  const keep=window.toast; window.toast=function(){};
+  try{ window.reuseReq(id); }finally{ window.toast=keep; }
+  window.reqEditId=id;
+  if(r.tpl==='company'){
+    set('co-date',(r.co&&r.co.date)||isoToday());
+    try{ coInv=(await invoiceFiles(r))||[]; }catch(e){ coInv=[]; }
+    renderCoInv();
+  } else if(r.date){ set('rq-date',r.date); }
+  formButtons();
+  try{ $('req-form-card').scrollIntoView({behavior:'smooth',block:'start'}); }catch(e){}
+  toast(r.status==='Draft'?'Draft opened. Carry on, then save.':'Opened for editing. Saving replaces this requisition.','ti-edit');
+};
+
+/* the list of saved requisitions: Edit button, Draft label; drafts stay out of the approval queue */
+window.reqRowHTML=reqRowHTML=function(r,canManage){
+  const when=new Date(r.created).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  const st=r.status||'Pending', draft=st==='Draft';
+  const badge=draft?'<span class="bdg bn" style="background:#f1f5f9;color:#475569">Draft</span>':`<span class="bdg ba">${esc(st)}</span>`;
+  const amt=r.amount?NGN(r.amount):'No amount yet';
+  return `<div style="display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--bd);border-radius:8px;margin-bottom:6px;background:#fff;flex-wrap:wrap">
+    <div style="flex:1;min-width:150px"><strong style="font-size:12px">${esc(r.subject||'(no subject yet)')}</strong>
+      <div style="font-size:10.5px;color:var(--gr)">${amt} · ${esc(r.requester||'—')} · ${when}${r.updated?' · edited '+new Date(r.updated).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):''}</div></div>
+    ${badge}
+    ${canEdit(r)?`<button class="btn sm p" onclick="editReq('${r.id}')" title="${draft?'Continue this draft':'Edit this requisition'}"><i class="ti ti-edit"></i>${draft?'Continue':'Edit'}</button>`:''}
+    <button class="btn sm" onclick="reuseReq('${r.id}')" title="Duplicate & reuse"><i class="ti ti-copy"></i>Reuse</button>
+    <button class="btn sm" onclick="printReqById('${r.id}')"><i class="ti ti-printer"></i>Print</button>
+    ${canManage?`<button class="btn sm" onclick="deleteReq('${r.id}')" title="Delete"><i class="ti ti-trash"></i></button>`:''}
+  </div>`;
+};
+window.renderRequisition=renderRequisition=function(){
+  const all=DB.kv.get('requisitions')||[], u=me();
+  const mine=all.filter(r=>u&&r.email===u.email);
+  const none=t=>`<div style="padding:12px;text-align:center;color:var(--gr);font-size:12px">${t}</div>`;
+  const myEl=$('req-my-list');
+  if(myEl) myEl.innerHTML=mine.length?mine.map(r=>reqRowHTML(r,true)).join(''):none('No requisitions yet. Click “New requisition” to raise one.');
+  const queue=all.filter(r=>r.status!=='Draft');
+  const allEl=$('req-all-list');
+  if(allEl) allEl.innerHTML=queue.length?queue.map(r=>reqRowHTML(r,typeof canViewPayroll==='function'&&canViewPayroll(u))).join(''):none('No requisitions raised yet.');
+};
+
 try{ const sel=$('rq-tpl'); if(sel) setReqTemplate(sel.value); }catch(e){}
+try{ formButtons(); }catch(e){}
+
+})();
+
+</script>
+<script id="s2s-v613b">
+/* ═══════════════════════════════════════════════════════════════════════════
+   S2S People Portal — v6.13.0 · accounts
+   1 · HR approves or declines every new account before it can sign in
+   2 · Show / hide password eye on every password box
+   Loaded last: wraps launch(), sbProfileToCU(), doRegister() and renderUserManagement().
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+if(window.__s2sV613b) return; window.__s2sV613b=true;
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const lc=s=>String(s==null?'':s).trim().toLowerCase();
+const cloudOn=()=>{ try{ return !!(navigator.onLine!==false&&typeof SB_READY!=='undefined'&&SB_READY&&SB); }catch(e){ return false; } };
+const isHR=u=>!!u&&(u.type==='superadmin'||(Array.isArray(u.access)&&u.access.indexOf('hr')>=0));
+
+/* ───────────── 2 · password eye ───────────── */
+const EYE='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYEOFF='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.9 17.9A10.9 10.9 0 0 1 12 19c-6.4 0-10-7-10-7a18.4 18.4 0 0 1 5.1-5.9M9.9 5.2A9.9 9.9 0 0 1 12 5c6.4 0 10 7 10 7a18.5 18.5 0 0 1-2.2 3.2M1 1l22 22"/><path d="M14.1 14.1a3 3 0 1 1-4.2-4.2"/></svg>';
+(function(){
+  const st=document.createElement('style');
+  st.textContent='.pw-wrap{position:relative;display:block}.pw-wrap>input{padding-right:42px!important}.pw-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:#64748b;width:32px;height:32px;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}.pw-eye:hover{background:#f1f5f9;color:#0D1B3E}.pw-eye:focus-visible{outline:2px solid #E8671A}';
+  document.head.appendChild(st);
+})();
+function addEye(inp){
+  if(!inp||inp.dataset.eye) return;
+  inp.dataset.eye='1';
+  const w=document.createElement('span'); w.className='pw-wrap';
+  inp.parentNode.insertBefore(w,inp); w.appendChild(inp);
+  const b=document.createElement('button'); b.type='button'; b.className='pw-eye'; b.tabIndex=0;
+  b.setAttribute('aria-label','Show password'); b.setAttribute('title','Show password'); b.innerHTML=EYE;
+  b.addEventListener('click',function(ev){
+    ev.preventDefault();
+    const show=inp.type==='password';
+    inp.type=show?'text':'password';
+    b.innerHTML=show?EYEOFF:EYE;
+    const l=show?'Hide password':'Show password'; b.setAttribute('aria-label',l); b.setAttribute('title',l);
+    try{ inp.focus(); const n=inp.value.length; inp.setSelectionRange(n,n); }catch(e){}
+  });
+  w.appendChild(b);
+}
+function scanEyes(root){
+  try{ (root||document).querySelectorAll('input[type="password"]').forEach(addEye); }catch(e){}
+}
+scanEyes();
+try{ new MutationObserver(function(m){ for(const x of m){ if(x.addedNodes&&x.addedNodes.length){ scanEyes(); break; } } }).observe(document.body,{childList:true,subtree:true}); }catch(e){}
+
+/* ───────────── 1 · HR approval ───────────── */
+const PENDING_MSG='Your account request has been received. HR must approve it before you can sign in. You will be able to sign in as soon as it is approved.';
+const REJECTED_MSG='HR has not approved this account request. Please contact HR if you think this is a mistake.';
+const statusOf=u=>{
+  if(!u) return 'approved';
+  let a=u.approval;
+  if(!a){ try{ const l=DB.getUser(u.email); if(l&&l.approval) a=l.approval; }catch(e){} }
+  return a||'approved';
+};
+
+const _p2cu=window.sbProfileToCU;
+window.sbProfileToCU=sbProfileToCU=function(p){
+  const cu=_p2cu.apply(this,arguments);
+  cu.approval=(p&&p.approval)||'approved';
+  return cu;
+};
+
+const _launch=window.launch;
+window.launch=launch=function(u){
+  const a=statusOf(u);
+  if(u&&a!=='approved'){ gateOut(u,a); return; }
+  const r=_launch.apply(this,arguments);
+  setTimeout(function(){ afterLaunch(u); },900);
+  return r;
+};
+function gateOut(u,a){
+  try{ if(typeof SB!=='undefined'&&SB&&SB.auth) SB.auth.signOut().catch(function(){}); }catch(e){}
+  try{ DB.session.clear(); }catch(e){}
+  try{ CU=null; }catch(e){}
+  try{ const app=$('app'); if(app) app.classList.remove('on'); }catch(e){}
+  try{ showPg('pg-login'); }catch(e){}
+  const em=$('li-em'); if(em&&u&&u.email) em.value=u.email;
+  const msg=a==='rejected'?REJECTED_MSG:PENDING_MSG;
+  try{ showErr('li-err',msg); }catch(e){}
+  const box=$('li-err'); if(box){ box.style.background=a==='rejected'?'':'#fffbeb'; box.style.color=a==='rejected'?'':'#92400e'; box.style.borderColor=a==='rejected'?'':'#fde68a'; }
+}
+function afterLaunch(u){
+  if(!u||!CU||CU.email!==u.email) return;
+  // keep checking that HR has not withdrawn approval since this device last signed in
+  if(cloudOn()&&!isHR(u)){
+    SB.from('profiles').select('approval').eq('email',u.email).maybeSingle().then(function(r){
+      const a=r&&r.data&&r.data.approval; if(a&&a!=='approved') gateOut(u,a);
+    },function(){});
+  }
+  if(isHR(u)) refreshRequests(true);
+}
+
+/* registration: tell the person it is a request, and keep device-only accounts pending */
+const _reg=window.doRegister;
+window.doRegister=doRegister=async function(){
+  const em=lc(($('rg-em')||{}).value);
+  const before=(function(){ try{ return !!DB.getUser(em); }catch(e){ return false; } })();
+  const tick=setInterval(rewrite,120); setTimeout(function(){ clearInterval(tick); },9000);
+  function rewrite(){
+    const ok=$('rg-ok'); if(!ok||ok.style.display==='none') return;
+    const t=ok.textContent||'';
+    if(/Welcome to S2S|created on this device|Account created!/i.test(t)&&!/HR/.test(t)){
+      const resend=ok.querySelector('a');
+      ok.textContent='Request sent. HR must approve your account before you can sign in. You will be able to sign in as soon as it is approved.';
+      if(resend&&/Check your email/i.test(t)) ok.appendChild(resend);
+    }
+  }
+  let r;
+  try{ r=await _reg.apply(this,arguments); }finally{ rewrite(); }
+  try{
+    const l=DB.getUser(em);
+    if(l&&!before&&!l.cloud&&l.type!=='superadmin'&&!l.approval){ l.approval='pending'; DB.setUser(em,l); }
+  }catch(e){}
+  return r;
+};
+
+/* ───────────── requests card in the Admin Panel ───────────── */
+function ensureCard(){
+  let c=$('acct-req-card'); if(c) return c;
+  const host=$('user-mgmt-list'); if(!host) return null;
+  const all=host.closest('.card'); if(!all||!all.parentNode) return null;
+  c=document.createElement('div'); c.className='card'; c.id='acct-req-card'; c.style.cssText='border-left:4px solid #E8671A';
+  c.innerHTML='<div class="ch"><div><div class="ct">Account requests awaiting your approval</div><div class="cs">Nobody can sign in until you approve their request</div></div></div><div id="acct-req-list" style="font-size:12px;color:var(--gr)">Loading…</div>';
+  all.parentNode.insertBefore(c,all);
+  return c;
+}
+async function loadRequests(){
+  const out=[];
+  try{
+    if(cloudOn()){
+      const r=await SB.from('profiles').select('id,email,first_name,last_name,user_type,department,phone,location,created_at,approval').eq('approval','pending').order('created_at',{ascending:true});
+      if(!r.error&&r.data) r.data.forEach(p=>out.push({src:'cloud',email:p.email,name:((p.first_name||'')+' '+(p.last_name||'')).trim(),type:p.user_type,dept:p.department,phone:p.phone,loc:p.location,at:p.created_at}));
+    }
+  }catch(e){}
+  try{
+    Object.values(DB.getAllUsers()||{}).forEach(u=>{ if(u&&u.approval==='pending'&&!u.cloud) out.push({src:'local',email:u.email,name:((u.firstName||'')+' '+(u.lastName||'')).trim(),type:u.type,dept:u.dept,phone:u.phone,loc:u.location,at:null}); });
+  }catch(e){}
+  return out;
+}
+async function refreshRequests(notify){
+  const list=await loadRequests();
+  const c=ensureCard();
+  if(c){
+    const el=$('acct-req-list');
+    el.innerHTML=list.length?list.map(q=>`<div class="user-mgmt-row" style="align-items:center">
+      <div class="user-mgmt-av">${esc((q.name||'?').split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase())}</div>
+      <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600">${esc(q.name||q.email)} <span class="bdg ba" style="margin-left:4px">${esc(q.type==='volunteer'?'Volunteer':'Employee')}</span></div>
+      <div style="font-size:10.5px;color:var(--gr)">${esc(q.email)} · ${esc(q.dept||'—')}${q.phone?' · '+esc(q.phone):''}${q.loc?' · '+esc(q.loc):''}${q.at?' · requested '+esc(new Date(q.at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})):''}${q.src==='local'?' · this device only':''}</div></div>
+      <div style="display:flex;gap:5px"><button class="btn p sm" onclick="s2sDecide('${esc(q.email)}','approved','${q.src}')"><i class="ti ti-check"></i>Approve</button>
+      <button class="btn sm r" onclick="s2sDecide('${esc(q.email)}','rejected','${q.src}')"><i class="ti ti-x"></i>Decline</button></div></div>`).join(''):'No one is waiting for approval.';
+  }
+  setBanner(list.length);
+  if(notify&&list.length) try{ toast(list.length+' account request'+(list.length===1?'':'s')+' waiting for your approval','ti-user-check'); }catch(e){}
+  return list;
+}
+function setBanner(n){
+  let b=$('acct-req-banner');
+  const dash=$('pg-dashboard');
+  if(!n){ if(b) b.remove(); return; }
+  if(!dash) return;
+  if(!b){ b=document.createElement('div'); b.id='acct-req-banner'; b.style.cssText='background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12.5px;display:flex;align-items:center;gap:10px;flex-wrap:wrap'; dash.insertBefore(b,dash.firstChild); }
+  b.innerHTML='<i class="ti ti-user-exclamation" style="font-size:18px"></i><span style="flex:1"><strong>'+n+' account request'+(n===1?'':'s')+'</strong> waiting for your approval.</span><button class="btn p sm" onclick="nav(\'admin\');setTimeout(function(){var c=document.getElementById(\'acct-req-card\');if(c)c.scrollIntoView({behavior:\'smooth\'})},300)">Review</button>';
+}
+window.s2sDecide=async function(email,status,src){
+  const word=status==='approved'?'approve':'decline';
+  if(status==='rejected'&&!confirm('Decline the account request from '+email+'?')) return;
+  try{
+    if(src==='cloud'){
+      const r=await SB.rpc('admin_set_approval',{p_email:email,p_status:status,p_note:null});
+      if(r&&r.error) throw r.error;
+    } else {
+      const u=DB.getUser(email); if(!u) throw new Error('Account not found on this device');
+      u.approval=status; DB.setUser(email,u);
+    }
+    toast(status==='approved'?email+' approved. They can sign in now.':'Request from '+email+' declined.',status==='approved'?'ti-check':'ti-x');
+  }catch(e){
+    const m=String((e&&e.message)||e);
+    toast(/admin_set_approval|function/i.test(m)?'Run the v6.13 database update in Supabase first (file 11).':('Could not '+word+': '+m),'ti-alert-circle');
+  }
+  refreshRequests(false);
+  try{ renderUserManagement(); }catch(e){}
+};
+
+const _rum=window.renderUserManagement;
+window.renderUserManagement=renderUserManagement=function(){
+  const r=_rum.apply(this,arguments);
+  try{ if(isHR(CU)) refreshRequests(false); }catch(e){}
+  return r;
+};
+window.addEventListener('online',function(){ try{ if(CU&&isHR(CU)) refreshRequests(false); }catch(e){} });
+
+})();
+
+</script>
+<script id="s2s-v613c">
+/* ═══════════════════════════════════════════════════════════════════════════
+   S2S People Portal — v6.13.0 · payroll print
+   The Summarized Salary Report prints on the company letterhead (same logo and
+   footer positions as the requisition) with the table and headings laid out as in
+   the company's salary report. All positions are measured from that report, in points.
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+if(window.__s2sV613c) return; window.__s2sV613c=true;
+const CF=window.S2S_CF; if(!CF) return;
+const esc=CF.esc;
+
+const fmt2=v=>{ const n=parseFloat(String(v).replace(/[^\d.]/g,'')); return isFinite(n)?n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):String(v); };
+const AR="Arial,Helvetica,'Liberation Sans',sans-serif";
+/* column lines of the company report: 24.8 | 53.5 | 177.2 | 308.6 | 406.6 | 492.3 | 577.3 pt */
+const COLS=[28.7,123.7,131.4,98.0,85.7,84.0];
+const PAY_CSS=`
+.pr{font-family:${AR};color:#000}
+.pr-t{white-space:nowrap;font-weight:700}
+table.pt{border-collapse:collapse;table-layout:fixed;margin-left:24.8pt;width:551.5pt;font:400 9pt/11.6pt ${AR};color:#000}
+table.pt th,table.pt td{border:.75pt solid #000;padding:2.7pt 2pt 0 7.1pt;vertical-align:top;text-align:left;overflow-wrap:anywhere;white-space:normal}
+table.pt th:last-child,table.pt td:last-child{padding-left:6.5pt}
+table.pt th{font-weight:700}
+table.pt tr.hd{height:24.0pt}
+table.pt tr.rw{height:23.6pt}
+table.pt .nt{font-size:7.5pt;line-height:9pt;color:#333}
+table.pt td.rt{text-align:right;padding-right:7.7pt}
+table.pt tr.sm{height:24.2pt}
+.pr-tot{display:flex;margin-left:406.6pt;width:169.7pt;font:700 9pt/11.6pt ${AR}}
+.pr-tot>div{height:26.1pt;padding:3pt 2pt 0 7.7pt;border:0 solid #000;border-width:0 .75pt .75pt 0}
+.pr-tot>div:first-child{width:85.7pt;border-left-width:.75pt;padding-left:7.2pt}
+.pr-tot>div:last-child{width:84pt;font-size:10pt;padding-left:6.5pt}
+.pr-w{margin-left:24.8pt;width:552.5pt;text-align:center;font:700 9pt/11.6pt ${AR}}
+`;
+
+/* One block per line, margin-top chosen so every baseline lands where the company report has it */
+function arialBase(F,L){ return (L-1.117*F)/2+0.905*F; }
+const T_BASE=52.9, H_BASE=91.2, S_BASE=116.0;
+function head(heading){
+  const o1=arialBase(22,26), o2=arialBase(12,14);
+  const m1=T_BASE-o1, m2=H_BASE-o2-(m1+26);
+  return `<div class="pr pr-t" style="margin:${m1.toFixed(2)}pt 0 0 174.9pt;font-size:22pt;line-height:26pt">SLUM2SCHOOL AFRICA</div>`+
+    `<div class="pr pr-t" style="margin:${m2.toFixed(2)}pt 0 0 160.6pt;font-size:12pt;line-height:14pt">${esc(String(heading||'').toUpperCase())}</div>`;
+}
+function secLabel(txt,first){
+  const o3=arialBase(10.7,12.5);
+  const mt=first?(S_BASE-o3-(H_BASE-arialBase(12,14)+14)):14;
+  return `<div class="pr pr-sec pr-t" style="margin:${mt.toFixed(2)}pt 0 0 72.6pt;font-size:10.7pt;line-height:12.5pt">${esc(txt)}</div>`;
+}
+const colgroup='<colgroup>'+COLS.map(w=>`<col style="width:${w}pt">`).join('')+'</colgroup>';
+function staffTable(rows,tot){
+  const hd='<thead><tr class="hd"><th>S/N</th><th>STAFF NAME</th><th>DESIGNATION</th><th>ACCOUNT NO.</th><th>BANK NAME</th><th>AMOUNT</th></tr></thead>';
+  const body=rows.map((r,i)=>`<tr class="rw"><td>${i+1}</td><td>${esc(r.n)}${r.note?`<div class="nt">${esc(r.note)}</div>`:''}</td><td>${esc(r.d)}</td><td>${esc(r.a)}</td><td>${esc(r.b)}</td><td>${esc(r.m)}</td></tr>`).join('');
+  return `<table class="pt" style="margin-top:5.2pt">${colgroup}${hd}<tbody>${body}</tbody></table>`+
+    `<div class="pr-tot"><div>TOTAL:</div><div>${esc(tot)}</div></div>`;
+}
+function summaryTable(rows,tot){
+  const w=[28.7,353.1,169.7];
+  const cg='<colgroup>'+w.map(x=>`<col style="width:${x}pt">`).join('')+'</colgroup>';
+  return `<div class="pr pr-sec pr-t" style="margin:16pt 0 0 72.6pt;font-size:10.7pt;line-height:12.5pt">CATEGORIES</div>`+
+    `<table class="pt" style="margin-top:4.6pt">${cg}<thead><tr class="hd"><th>S/N</th><th>CATEGORY</th><th>AMOUNT</th></tr></thead><tbody>`+
+    rows.map((r,i)=>`<tr class="rw"><td>${i+1}</td><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')+`</tbody></table>`+
+    `<div class="pr-tot"><div>TOTAL:</div><div>${esc(tot)}</div></div>`;
+}
+
+/* runs inside the print document */
+function paginateSrc(){
+  var PT=96/72, LIM=776*PT, TOP=88*PT, guard=0;
+  function go(){
+    var sheets=[].slice.call(document.querySelectorAll('.cf-sh'));
+    for(var i=0;i<sheets.length&&guard<80;i++){
+      var sh=sheets[i], fl=sh.querySelector('.cf-flow'); if(!fl) continue;
+      var t=sh.getBoundingClientRect().top, kids=[].slice.call(fl.children), k=-1;
+      for(var j=0;j<kids.length;j++){ if(kids[j].getBoundingClientRect().bottom-t>LIM){ k=j; break; } }
+      if(k<0) continue;
+      var kid=kids[k], move=[];
+      var tbl=null, rest=0;
+      if(kid.tagName==='TABLE'){
+        tbl=kid;
+      } else if(kid.classList.contains('pr-tot')&&kids[k-1]&&kids[k-1].tagName==='TABLE'){
+        tbl=kids[k-1]; rest=1;               // keep the total with the last row
+      }
+      if(tbl){
+        var rows=[].slice.call(tbl.tBodies[0].rows), n=rows.length;
+        if(rest){ n=rows.length-1; }
+        else { for(var r=0;r<rows.length;r++){ if(rows[r].getBoundingClientRect().bottom-t>LIM){ n=r; break; } } }
+        if(n>=1&&n<rows.length){
+          var c=tbl.cloneNode(true), cr=[].slice.call(c.tBodies[0].rows);
+          for(var a=0;a<n;a++) c.tBodies[0].removeChild(cr[a]);
+          for(var q=rows.length-1;q>=n;q--) tbl.tBodies[0].removeChild(rows[q]);
+          c.style.marginTop='0';
+          move.push(c);
+          for(var m=kids.indexOf(tbl)+1;m<kids.length;m++) move.push(kids[m]);
+        } else {
+          for(var m2=kids.indexOf(tbl);m2<kids.length;m2++) move.push(kids[m2]);
+        }
+      } else {
+        for(var m3=k;m3<kids.length;m3++) move.push(kids[m3]);
+      }
+      if(!move.length||(move.length===kids.length&&!tbl)) continue;
+      guard++;
+      var ns=sh.cloneNode(true), nf=ns.querySelector('.cf-flow'); nf.innerHTML=''; nf.style.top=TOP+'px';
+      move.forEach(function(x){ nf.appendChild(x); });
+      if(move[0]&&move[0].style) move[0].style.marginTop='0';
+      sh.parentNode.insertBefore(ns,sh.nextSibling);
+      sheets.splice(i+1,0,ns);
+    }
+    window.__cfReady=true;
+  }
+  var run=function(){ (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(go,go); };
+  if(document.readyState==='complete') run(); else window.addEventListener('load',run);
+}
+
+window.S2S_PAY={head:head,secLabel:secLabel,css:PAY_CSS,paginate:paginateSrc};
+
+/* model: {period, sections:[{label, rows:[{n,note,d,a,b,m}], total}], cats:[[name,amount]], grand, words} */
+window.s2sPayrollDoc=function(m){
+  let h=head('SUMMARIZED SALARY REPORT FOR '+String(m.period||'').toUpperCase()), first=true;
+  m.sections.forEach(s=>{ h+=secLabel(s.label,first)+staffTable(s.rows,s.total); first=false; });
+  if(m.cats&&m.cats.length>1) h+=summaryTable(m.cats,m.grand);
+  if(m.words) h+=`<div class="pr-w" style="margin-top:14pt">${esc(m.words)}</div>`;
+  const sheet=`<div class="cf-sh">${CF.layer({memo:false,bar:false})}<div class="cf-flow">${h}</div></div>`;
+  return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+esc('S2S Payroll - Summarized Salary Report')+'</title><style>'+CF.PRINT_CSS+PAY_CSS+'</style></head><body>'+sheet+'<scr'+'ipt>('+paginateSrc.toString()+')();</scr'+'ipt></body></html>';
+};
+
+/* ── hook: take the rows the portal already works out (proration, categories) and print them in the company design ── */
+const _orig=window.printPayrollDoc;
+window.printPayrollDoc=printPayrollDoc=function(){
+  const keep=window.s2sPrintWindow; let cap=null;
+  window.s2sPrintWindow=function(t,html){ cap=html; };
+  try{ _orig.apply(this,arguments); }finally{ window.s2sPrintWindow=keep; }
+  if(!cap) return;                                   // payroll refused (not allowed / nobody on payroll)
+  let m;
+  try{ m=parse(cap); }catch(e){ m=null; }
+  if(!m||!m.sections.length){ keep.call(window,'S2S Payroll - Summarized Salary Report',cap); return; }
+  CF.printFrame(window.s2sPayrollDoc(m));
+};
+function parse(html){
+  const doc=new DOMParser().parseFromString(html,'text/html');
+  const page=doc.querySelector('.s2s-page')||doc.body;
+  const m={period:'',sections:[],cats:[],grand:'',words:''};
+  let label='';
+  [].slice.call(page.children).forEach(el=>{
+    const tx=(el.textContent||'').trim();
+    if(el.tagName==='DIV'){
+      if(/^FOR\s/i.test(tx)) m.period=tx.replace(/^FOR\s+/i,'');
+      else if(/\sSTAFF$/i.test(tx)&&!/CATEGOR/i.test(tx)) label=tx;
+      else if(/^CATEGORIES$/i.test(tx)) label='CATEGORIES';
+      else if(el.style&&/center/.test(el.style.textAlign||'')&&/naira/i.test(tx)) m.words=tx;
+    } else if(el.tagName==='TABLE'){
+      const ths=el.querySelectorAll('thead th'), trs=[].slice.call(el.querySelectorAll('tbody tr'));
+      const last=trs.pop(), tot=last?(last.lastElementChild.textContent||'').trim():'';
+      if(ths.length>=6){
+        const rows=trs.map(tr=>{ const c=tr.children; const nm=c[1];
+          const nt=nm.querySelector('div'); const note=nt?nt.textContent.trim():''; if(nt) nt.remove();
+          return {n:nm.textContent.trim(),note:note,d:c[2].textContent.trim(),a:c[3].textContent.trim(),b:c[4].textContent.trim(),m:c[5].textContent.trim()}; });
+        const strip=fmt2;
+        m.sections.push({label:label||'STAFF',rows:rows.map(r=>Object.assign(r,{m:strip(r.m)})),total:strip(tot)});
+      } else {
+        m.cats=trs.map(tr=>[tr.children[1].textContent.trim().replace(/\s+Staff$/i,' Staff'),fmt2(tr.children[2].textContent||'')]);
+        m.grand=fmt2(tot||'');
+      }
+    }
+  });
+  return m;
+}
+
+})();
+
+</script>
+<script id="s2s-v613d">
+/* ═══════════════════════════════════════════════════════════════════════════
+   S2S People Portal — v6.13.0 · weekly and monthly attendance reports
+   HR, the ED (and Finance) see every member of staff's clock-in and clock-out,
+   and a report for the latest completed week and month builds itself, on screen,
+   as a letter-headed print and as an Excel-ready file.
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+if(window.__s2sV613d) return; window.__s2sV613d=true;
+const CF=window.S2S_CF, PAY=window.S2S_PAY; if(!CF||!PAY) return;
+const $=id=>document.getElementById(id);
+const esc=CF.esc;
+const lc=s=>String(s==null?'':s).trim().toLowerCase();
+const cloudOn=()=>{ try{ return !!(navigator.onLine!==false&&typeof SB_READY!=='undefined'&&SB_READY&&SB); }catch(e){ return false; } };
+const mgmt=()=>{ try{ return !!CU&&isMgmt(CU); }catch(e){ return false; } };
+const MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+/* ── dates: plain yyyy-mm-dd keys, the same keys the clock-in records use ── */
+const U=k=>{ const a=k.split('-'); return Date.UTC(+a[0],+a[1]-1,+a[2]); };
+const K=ms=>{ const d=new Date(ms); return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0'); };
+const addDays=(k,n)=>K(U(k)+n*864e5);
+const dow=k=>(new Date(U(k)).getUTCDay()+6)%7;            // Monday = 0
+const monday=k=>addDays(k,-dow(k));
+const today=()=>{ try{ return todayKey(); }catch(e){ return K(Date.now()); } };
+const nice=k=>{ const a=k.split('-'); return (+a[2])+' '+MON[+a[1]-1]+' '+a[0]; };
+const short=k=>{ const a=k.split('-'); return (+a[2])+' '+MON[+a[1]-1].slice(0,3); };
+const monthRange=ym=>{ const a=ym.split('-'); const last=new Date(Date.UTC(+a[0],+a[1],0)).getUTCDate(); return {from:ym+'-01',to:ym+'-'+String(last).padStart(2,'0')}; };
+const lastWeekStart=()=>addDays(monday(today()),-7);
+const lastMonthYM=()=>{ const t=today(); const y=+t.slice(0,4), m=+t.slice(5,7); const d=new Date(Date.UTC(y,m-2,1)); return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0'); };
+
+/* ── data ── */
+function allRecords(){ try{ return DB.kv.get('att_records')||[]; }catch(e){ return []; } }
+async function ensureRange(from,to){
+  if(!cloudOn()) return;
+  try{
+    const r=await SB.from('attendance').select('*').gte('work_date',from).lte('work_date',to).limit(5000);
+    if(r.error||!r.data) return;
+    const have=allRecords(), keys=new Set(have.map(x=>lc(x.email)+'|'+x.date));
+    const add=r.data.map(a=>({email:lc(a.email),name:a.name,staffId:a.staff_id,dept:a.department,date:String(a.work_date||'').slice(0,10),clockIn:a.clock_in,clockOut:a.clock_out,lat:a.lat,lng:a.lng,punches:Array.isArray(a.punches)?a.punches:[],sessionCount:a.sessions||0,minutes:a.minutes||0,_cloud:true}))
+      .filter(x=>!keys.has(x.email+'|'+x.date));
+    if(add.length) DB.kv.set('att_records',have.concat(add));
+  }catch(e){}
+}
+const hm=iso=>{ try{ return new Date(iso).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }catch(e){ return ''; } };
+const dur=m=>{ m=Math.max(0,Math.round(m||0)); return Math.floor(m/60)+':'+String(m%60).padStart(2,'0'); };
+const nmatch=(a,b)=>{ try{ return window.s2sNameMatch?window.s2sNameMatch(a,b):lc(a)===lc(b); }catch(e){ return lc(a)===lc(b); } };
+
+function compute(kind,from,to){
+  const recs=allRecords().filter(r=>r.date>=from&&r.date<=to);
+  const roster=(typeof STAFF!=='undefined'?STAFF:[]).filter(s=>s.s!=='Resigned'&&s.emp!=='outsourced');
+  const cutoff=today()<to?today():to;
+  const dates=[]; for(let k=from;k<=to;k=addDays(k,1)) dates.push(k);
+  const work=dates.filter(k=>dow(k)<5&&k<=cutoff).length;
+  const used=new Set();
+  const person=(n,d,match)=>{
+    const mine=recs.filter(r=>{ if(used.has(r)) return false; if(match(r)){ used.add(r); return true; } return false; });
+    const byDay={}; let mins=0, late=0, present=0, inSum=0, inN=0;
+    mine.forEach(r=>{
+      const st=window.recState(r); if(!st.punches.length) return;
+      byDay[r.date]=st; present++; mins+=st.total;
+      if(st.firstIn){ const dt=new Date(st.firstIn); if(dt.getHours()>=9) late++; inSum+=dt.getHours()*60+dt.getMinutes(); inN++; }
+    });
+    return {n:n,d:d||'',byDay:byDay,present:present,late:late,mins:mins,avgIn:inN?Math.round(inSum/inN):null,absent:0};
+  };
+  const rows=roster.map(s=>person(s.n,s.r||'',r=>(r.staffId&&r.staffId===s.id)||(s.email&&lc(r.email)===lc(s.email))||nmatch(r.name,s.n)));
+  // clock-ins from people who are not on the roster still count
+  const extra={}; recs.forEach(r=>{ if(!used.has(r)){ (extra[lc(r.email)||r.name]=extra[lc(r.email)||r.name]||[]).push(r); } });
+  Object.keys(extra).forEach(k=>{ const first=extra[k][0]; const set=new Set(extra[k]); rows.push(person(first.name||first.email,'',r=>set.has(r))); });
+  rows.forEach(p=>{ let a=0; dates.forEach(k=>{ if(dow(k)<5&&k<=cutoff&&!p.byDay[k]) a++; }); p.absent=a; });
+  rows.sort((a,b)=>a.n.localeCompare(b.n));
+  return {kind:kind,from:from,to:to,dates:dates,work:work,rows:rows,cutoff:cutoff,partial:today()<to};
+}
+const titleOf=m=>{
+  if(m.kind==='week') return 'WEEKLY ATTENDANCE REPORT FOR '+short(m.from).toUpperCase()+' TO '+nice(m.to).toUpperCase();
+  const a=m.from.split('-'); return 'MONTHLY ATTENDANCE REPORT FOR '+MON[+a[1]-1].toUpperCase()+' '+a[0];
+};
+
+/* ── table: one builder for print and for the screen ── */
+function cols(m){
+  return m.kind==='week'
+    ? {w:[20,118,42.5,42.5,42.5,42.5,42.5,42.5,42.5,34,28,54], h:['S/N','STAFF NAME'].concat(m.dates.map(k=>DAYS[dow(k)].toUpperCase()+' '+(+k.slice(8))),['DAYS','LATE','HOURS'])}
+    : {w:[20,112,110,38,40,36,34,50,60,51.5], h:['S/N','STAFF NAME','DESIGNATION','DAYS PRESENT','WORKING DAYS','ABSENT','LATE','AVG CLOCK-IN','TOTAL HOURS','AVG HRS/DAY']};
+}
+function cells(m,p,i){
+  if(m.kind==='week'){
+    const days=m.dates.map(k=>{
+      const st=p.byDay[k];
+      if(st){ const out=st.open?'on site':(st.lastOut?hm(st.lastOut):''); return `${hm(st.firstIn)}<br>${out}`; }
+      return dow(k)>4?'-':(k<=m.cutoff?'ABSENT':'');
+    });
+    return [i+1,p.n].concat(days,[p.present,p.late,dur(p.mins)]);
+  }
+  const avgIn=p.avgIn==null?'-':String(Math.floor(p.avgIn/60)).padStart(2,'0')+':'+String(p.avgIn%60).padStart(2,'0');
+  return [i+1,p.n,p.d,p.present,m.work,p.absent,p.late,avgIn,dur(p.mins),p.present?dur(p.mins/p.present):'-'];
+}
+function tableHTML(m,print){
+  const c=cols(m);
+  const cg='<colgroup>'+c.w.map(x=>`<col style="width:${x}pt">`).join('')+'</colgroup>';
+  const hd='<thead><tr class="hd">'+c.h.map(x=>`<th>${esc(x)}</th>`).join('')+'</tr></thead>';
+  const body=m.rows.map((p,i)=>'<tr class="rw">'+cells(m,p,i).map((x,j)=>{ const raw=typeof x==='string'&&x.indexOf('<br>')>=0; return `<td>${raw?x:esc(x)}</td>`; }).join('')+'</tr>').join('');
+  return `<table class="pt ${m.kind==='week'?'rpw':'rpm'}" style="margin-top:5.2pt">${cg}${hd}<tbody>${body}</tbody></table>`;
+}
+const RP_CSS=`
+table.rpw,table.rpm{font-size:7pt;line-height:8.6pt}
+table.rpw th,table.rpm th{font-size:6.6pt;padding:2.2pt 1pt 0 2.4pt;line-height:8pt}
+table.rpw td,table.rpm td{padding:2.2pt 1pt 1.2pt 2.4pt}
+table.rpw tr.hd,table.rpm tr.hd{height:20pt}
+table.rpw tr.rw,table.rpm tr.rw{height:18pt}
+table.rpw td:last-child,table.rpm td:last-child,table.rpw th:last-child,table.rpm th:last-child{padding-left:2.4pt}
+.rp-note{margin:9pt 0 0 24.8pt;width:551.5pt;font:400 7.5pt/9.5pt Arial,Helvetica,sans-serif;color:#333}
+`;
+function printHTML(m){
+  const note=`Working days: ${m.work} (Monday to Friday${m.partial?', up to '+nice(m.cutoff):''}). Late means the first clock-in was at 09:00 or later. Hours are the time between each clock-in and the next clock-out. ${m.partial?'This period has not ended, so the figures are to date. ':''}Report generated ${nice(today())} from the Slum2School People Portal.`;
+  const h=PAY.head(titleOf(m))+PAY.secLabel('ALL STAFF',true)+tableHTML(m,true)+`<div class="rp-note">${esc(note)}</div>`;
+  return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+esc('S2S Attendance - '+titleOf(m))+'</title><style>'+CF.PRINT_CSS+PAY.css+RP_CSS+'</style></head><body>'+
+    `<div class="cf-sh">${CF.layer({memo:false,bar:false})}<div class="cf-flow">${h}</div></div>`+
+    '<scr'+'ipt>('+PAY.paginate.toString()+')();</scr'+'ipt></body></html>';
+}
+function csv(m){
+  const c=cols(m);
+  const q=v=>'"'+String(v==null?'':v).replace(/<br>/g,' - ').replace(/"/g,'""')+'"';
+  return '﻿'+[[titleOf(m)],c.h].concat(m.rows.map((p,i)=>cells(m,p,i))).map(r=>r.map(q).join(',')).join('\r\n');
+}
+
+/* ── the tab ── */
+const state={kind:'week',from:null,to:null,model:null};
+function ensureTab(){
+  const bar=$('att-tabs'); if(!bar||$('att-tab-btn-4')) return;
+  const b=document.createElement('div'); b.className='tab mgmt-only'; b.id='att-tab-btn-4'; b.setAttribute('onclick','attTab(4,this)');
+  b.innerHTML='📑 Reports <span id="att-rep-new" style="display:none;background:#E8671A;color:#fff;border-radius:99px;font-size:9px;padding:1px 6px;margin-left:3px">new</span>';
+  bar.appendChild(b);
+  const pane=document.createElement('div'); pane.id='att-tab-4'; pane.className='dn';
+  const t3=$('att-tab-3'); if(t3&&t3.parentNode) t3.parentNode.insertBefore(pane,t3.nextSibling); else $('pg-attendance').appendChild(pane);
+  if(!mgmt()) b.style.display='none';
+}
+const _tab=window.attTab;
+window.attTab=attTab=function(n,el){
+  _tab.apply(this,arguments);
+  const p=$('att-tab-4'); if(p) p.classList.toggle('dn',n!==4);
+  if(n===4){ markSeen(); renderReports(); }
+};
+const seen=()=>{ try{ return DB.kv.get('att_report_seen')||{}; }catch(e){ return {}; } };
+function markSeen(){ try{ DB.kv.set('att_report_seen',{week:lastWeekStart(),month:lastMonthYM()}); }catch(e){} const n=$('att-rep-new'); if(n) n.style.display='none'; }
+
+const pickStyle='border:1.5px solid var(--bd);border-radius:8px;padding:7px 10px;font-size:12px;font-family:var(--fn);background:#fff';
+async function renderReports(force){
+  const pane=$('att-tab-4'); if(!pane) return;
+  if(!mgmt()){ pane.innerHTML=''; return; }
+  if(!state.from){ state.kind='week'; state.from=lastWeekStart(); state.to=addDays(state.from,6); }
+  pane.innerHTML='<div class="card"><div style="padding:14px;text-align:center;color:var(--gr);font-size:12px">Building the report…</div></div>';
+  await ensureRange(state.from,state.to);
+  const m=state.model=compute(state.kind,state.from,state.to);
+  const wk=lastWeekStart(), mo=lastMonthYM();
+  const weekChips=[0,1,2,3,4,5].map(i=>{ const f=addDays(monday(today()),-7*i); const on=state.kind==='week'&&state.from===f; return `<button class="btn sm${on?' p':''}" onclick="s2sRepGo('week','${f}')">${i===0?'This week':short(f)+' - '+short(addDays(f,6))}</button>`; }).join('');
+  const monthChips=[0,1,2,3,4,5].map(i=>{ const t=today(); const d=new Date(Date.UTC(+t.slice(0,4),+t.slice(5,7)-1-i,1)); const ym=d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0'); const on=state.kind==='month'&&state.from===ym+'-01'; return `<button class="btn sm${on?' p':''}" onclick="s2sRepGo('month','${ym}')">${i===0?'This month':MON[d.getUTCMonth()].slice(0,3)+' '+d.getUTCFullYear()}</button>`; }).join('');
+  const c=cols(m);
+  const present=m.rows.reduce((a,p)=>a+p.present,0);
+  const body=m.rows.map((p,i)=>'<tr>'+cells(m,p,i).map((x,j)=>`<td style="border:1px solid var(--bd);padding:5px 6px;font-size:11px;vertical-align:top;${j>=2&&m.kind==='week'?'text-align:center;white-space:nowrap':''}${String(x)==='ABSENT'?';color:var(--rd);font-weight:600':''}">${typeof x==='string'&&x.indexOf('<br>')>=0?x:esc(x)}</td>`).join('')+'</tr>').join('');
+  pane.innerHTML=`<div class="card" style="border-left:4px solid var(--og)">
+    <div class="ch"><div><div class="ct">Attendance reports</div><div class="cs">Built automatically from every clock-in and clock-out. The latest completed week and month are ready for you.</div></div></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:var(--nv);align-self:center;min-width:54px">Weekly</span>${weekChips}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:var(--nv);align-self:center;min-width:54px">Monthly</span>${monthChips}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px"><span style="font-size:11px;color:var(--gr)">Other period:</span>
+      <input type="date" id="rep-d" style="${pickStyle}" title="Any date in the week you want"><button class="btn sm" onclick="s2sRepGo('week',document.getElementById('rep-d').value)">Week</button>
+      <input type="month" id="rep-m" style="${pickStyle}"><button class="btn sm" onclick="s2sRepGo('month',document.getElementById('rep-m').value)">Month</button></div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <div style="flex:1;min-width:200px"><div style="font-weight:700;font-size:13px;color:var(--nv)">${esc(titleOf(m).replace(/ REPORT FOR /,': ').replace(/\b([A-Z])([A-Z]+)/g,(a,x,y)=>x+y.toLowerCase()))}</div>
+      <div style="font-size:11px;color:var(--gr)">${m.rows.length} people · ${m.work} working day${m.work===1?'':'s'} · ${present} attendance${present===1?'':'s'} recorded${m.partial?' · period still running, figures are to date':''}${state.from===wk||state.from===mo+'-01'?' · <strong style="color:var(--gn)">latest completed period</strong>':''}</div></div>
+      <button class="btn p sm" onclick="s2sRepPrint()"><i class="ti ti-printer"></i>Print / Save PDF</button>
+      <button class="btn sm" onclick="s2sRepCsv()"><i class="ti ti-file-spreadsheet"></i>Download for Excel</button></div>
+    <div style="overflow-x:auto"><table style="border-collapse:collapse;min-width:${m.kind==='week'?820:720}px;width:100%"><thead><tr>${c.h.map(h=>`<th style="border:1px solid var(--bd);background:#f1f5f9;padding:6px;font-size:10.5px;text-align:left">${esc(h)}</th>`).join('')}</tr></thead><tbody>${body||'<tr><td style="padding:12px;color:var(--gr)">No staff found.</td></tr>'}</tbody></table></div>
+    <div style="font-size:10.5px;color:var(--gr);margin-top:8px">Late means the first clock-in was at 09:00 or later. Only HR, the Executive Director and Finance can see this tab.</div></div>`;
+}
+window.s2sRepGo=function(kind,v){
+  if(!v) return;
+  if(kind==='week'){ state.kind='week'; state.from=monday(v); state.to=addDays(state.from,6); }
+  else { const r=monthRange(v.slice(0,7)); state.kind='month'; state.from=r.from; state.to=r.to; }
+  renderReports();
+};
+window.s2sRepPrint=function(){ if(!state.model) return; CF.printFrame(printHTML(state.model)); };
+window.s2sRepCsv=function(){
+  const m=state.model; if(!m) return;
+  const blob=new Blob([csv(m)],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='S2S-attendance-'+m.kind+'-'+m.from+'.csv'; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500);
+};
+window.s2sRepModel=function(kind,from){ const to=kind==='week'?addDays(from,6):monthRange(from.slice(0,7)).to; return compute(kind,kind==='week'?from:monthRange(from.slice(0,7)).from,to); };
+window.s2sRepHTML=printHTML;
+
+/* ── automatic: a new completed week or month is announced to HR / ED when they open the portal ── */
+async function auto(){
+  if(!mgmt()) return;
+  ensureTab();
+  const b=$('att-tab-btn-4'); if(b) b.style.display='';
+  const s=seen(), wk=lastWeekStart(), mo=lastMonthYM();
+  const newWeek=s.week!==wk, newMonth=s.month!==mo;
+  if(newWeek||newMonth){
+    const n=$('att-rep-new'); if(n) n.style.display='inline-block';
+    try{ toast((newMonth?'The '+MON[+mo.slice(5)-1]+' attendance report':'The weekly attendance report for '+short(wk)+' - '+short(addDays(wk,6)))+' is ready. Attendance > Reports','ti-report'); }catch(e){}
+  }
+  // pre-load the data so the report opens instantly
+  ensureRange(addDays(wk,0),addDays(wk,6)).then(function(){ return ensureRange(monthRange(mo).from,monthRange(mo).to); });
+}
+const _launch=window.launch;
+window.launch=launch=function(){ const r=_launch.apply(this,arguments); setTimeout(auto,2200); return r; };
+const _nav=window.nav;
+window.nav=nav=function(id){ const r=_nav.apply(this,arguments); if(id==='attendance'){ ensureTab(); const b=$('att-tab-btn-4'); if(b) b.style.display=mgmt()?'':'none'; } return r; };
+ensureTab();
 
 })();
 

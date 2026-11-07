@@ -20,7 +20,11 @@ const VENDOR = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js',
-  'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js'
+  'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js',
+  'https://cdn.jsdelivr.net/npm/@fontsource/carlito@5.0.19/files/carlito-latin-400-normal.woff2',
+  'https://cdn.jsdelivr.net/npm/@fontsource/carlito@5.0.19/files/carlito-latin-700-normal.woff2',
+  'https://cdn.jsdelivr.net/npm/@fontsource/tinos@5.3.0/files/tinos-latin-400-normal.woff2',
+  'https://cdn.jsdelivr.net/npm/@fontsource/tinos@5.3.0/files/tinos-latin-700-normal.woff2'
 ];
 
 /* Requests that must NEVER be served from cache — live data and auth */
@@ -39,7 +43,7 @@ self.addEventListener('install', e => {
       Promise.all([
         c.addAll(SHELL).catch(() => {}),
         Promise.all(VENDOR.map(u =>
-          fetch(new Request(u, { mode: 'no-cors', credentials: 'omit' }))
+          fetch(new Request(u, { mode: /\.woff2$/.test(u) ? 'cors' : 'no-cors', credentials: 'omit' }))
             .then(r => c.put(u, r))
             .catch(() => {})
         ))

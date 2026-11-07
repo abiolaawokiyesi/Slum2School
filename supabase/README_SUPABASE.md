@@ -34,6 +34,10 @@ Open your project at <https://supabase.com>, go to **SQL Editor → New query**,
 | 8 | `08_v611_compliance.sql` | **v6.11.** Cloud columns for the salary breakdown, date of birth and the working-day / statutory settings |
 | 9 | `09_v612_departments_insurance.sql` | **v6.12.** Departments, outsourced staff and who is on the NSITF and Group Life schedules, saved in the cloud |
 
+| 10 | `10_v613_company_requisition.sql` | **v6.13.** Cloud copy of the company-format requisition and private storage for vendor invoices |
+| 11 | `11_v613_account_approval.sql` | **v6.13.** HR approves or declines every new account. New sign-ups are blocked by the database until approved. Existing accounts stay approved |
+| 12 | `12_v613_requisition_drafts.sql` | **v6.13.** Requisition drafts: lets a draft be saved to, and edited in, the cloud |
+
 Every file is safe to run more than once, so if you lose your place you can start that file again.
 Green "Success" with no rows returned is the normal result for files 1 to 5.
 
