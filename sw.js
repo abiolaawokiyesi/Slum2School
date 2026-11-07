@@ -5,7 +5,7 @@
    client, Leaflet) are pre-cached on install, so requisitions, memos, printing
    and clock-in all work with no internet at all.
    ═════════════════════════════════════════════════════════════════════════ */
-const CACHE = 's2s-portal-v6_12_0';   // bump on every deploy to force fresh content
+const CACHE = 's2s-portal-v6_13_0';   // bump on every deploy to force fresh content
 
 /* Same-origin app shell — must be cached for the app to open offline */
 const SHELL = ['./', './index.html', './icon-192.png', './icon-512.png'];
@@ -18,7 +18,9 @@ const VENDOR = [
   'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+  'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js',
+  'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js'
 ];
 
 /* Requests that must NEVER be served from cache — live data and auth */
